@@ -1,4 +1,4 @@
 kunlun
 ======
 
-kunlun is a destributed file system that mainly contain mass tiny files.
+kunlun is a distributed file system that mainly contain mass tiny files.
