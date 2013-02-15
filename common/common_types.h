@@ -1,5 +1,5 @@
-#ifndef MACRO_H_
-#define MACRO_H_
+#ifndef COMMON_TYPES_H_
+#define COMMON_TYPES_H_
 
-#define G_BUF_SZIE 256
-#endif //MACRO_H_
+#define KL_BUF_SIZE 256
+#endif //COMMON_TYPES_H_

@@ -91,8 +91,8 @@ int CLog::WriteLog2(LOG_LEVEL level, const char *format, ...)
 
 int CLog::doWriteLog(const char *buf)
 {
-	char tbuf[G_BUF_SZIE];
-	if(GetLogTime(tbuf, G_BUF_SZIE) == -1){
+	char tbuf[KL_BUF_SIZE];
+	if(GetLogTime(tbuf, KL_BUF_SIZE) == -1){
 		printf("get local time failed\n");
 		return -1;
 	}

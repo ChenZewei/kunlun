@@ -17,12 +17,12 @@ CFile::CFile()
 
 CFile::CFile(const char *path, int flags)
 {
-	char msgbuf[G_BUF_SZIE];
+	char msgbuf[KL_BUF_SIZE];
 	m_fd = -1;
 	m_errno = 0;
 	if(Open(path, flags) == -1){
-		bzero(msgbuf, G_BUF_SZIE);
-		snprintf(msgbuf, G_BUF_SZIE, \
+		bzero(msgbuf, KL_BUF_SIZE);
+		snprintf(msgbuf, KL_BUF_SIZE, \
 			"open file: %s failed", \
 			path);
 		perror(msgbuf);
@@ -31,12 +31,12 @@ CFile::CFile(const char *path, int flags)
 
 CFile::CFile(const char *path, int flags, mode_t mode)
 {
-	char msgbuf[G_BUF_SZIE];
+	char msgbuf[KL_BUF_SIZE];
 	m_fd = -1;
 	m_errno = 0;
 	if(Open(path, flags, mode) == -1){
-		bzero(msgbuf, G_BUF_SZIE);
-		snprintf(msgbuf, G_BUF_SZIE, \
+		bzero(msgbuf, KL_BUF_SIZE);
+		snprintf(msgbuf, KL_BUF_SIZE, \
 			"open file: %s failed", \
 			path);
 		perror(msgbuf);
