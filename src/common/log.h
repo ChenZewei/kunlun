@@ -7,13 +7,7 @@ class CFile;
 class CMutex;
 
 /* define log level */
-enum LOG_LEVEL \
-{ \
-	LOG_LEVEL_ERROR, \
-	LOG_LEVEL_WARNNING, \
-	LOG_LEVEL_NOTICE, \
-	LOG_LEVEL_INFO \
-};
+enum LOG_LEVEL{LOG_LEVEL_ERROR, LOG_LEVEL_WARNNING, LOG_LEVEL_NOTICE, LOG_LEVEL_INFO};
 
 class CLog
 {

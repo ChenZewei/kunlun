@@ -37,7 +37,7 @@ void* logthread(void *args)
 
 int main(int argc, char *argv[])
 {
-	CLog *pLog = new CLog("a.log", LOG_LEVEL_NOTICE);
+	CLog *pLog = new CLog("test.log", LOG_LEVEL_NOTICE);
 	pthread_t pid;
 	int i;
 	if(pLog == NULL){

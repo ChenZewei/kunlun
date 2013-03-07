@@ -110,9 +110,7 @@ int CFile::Read(void *buf, size_t count)
 		nread = read(m_fd, p, nleft);
 		if(nread  == -1){
 			if(errno == EINTR){
-				continue; // read was interrupted
-			}else if(errno == EAGAIN){
-				break;
+				continue; // read was interrupted, and call read() again
 			}
 			return -1;
 		}else if(nread == 0){
@@ -135,13 +133,12 @@ int CFile::Write(const void *buf, size_t count)
 	while(nleft > 0){
 		nwrite = write(m_fd, p, nleft);
 		if(nwrite == -1){
-			if(errno == EINTR || \
-				errno == EAGAIN){
-					continue;
+			if(errno == EINTR){
+				continue;
 			}
 			return -1;
 		}else if(nwrite == 0){
-			break; //EOF
+			return -1;
 		}
 
 		p += nwrite;
