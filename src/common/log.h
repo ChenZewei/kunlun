@@ -1,10 +1,10 @@
-#ifndef LOG_H_
-#define LOG_H_
+#ifndef KL_COMMON_LOG_H_
+#define KL_COMMON_LOG_H_
 
 #define LOG_BUF_SIZE 1024
 
 class CFile;
-class CMutex;
+class CRWLock;
 
 /* define log level */
 enum LOG_LEVEL{LOG_LEVEL_ERROR, LOG_LEVEL_WARNNING, LOG_LEVEL_NOTICE, LOG_LEVEL_INFO};
@@ -29,7 +29,7 @@ private:
 	int GetLogTime(char *buf, int size);
 private:
 	CFile *m_pLogFile;
-	CMutex *m_pLogMutex;
+	CRWLock *m_plog_rwlock;
 	LOG_LEVEL m_level;
 };
-#endif //LOG_H_
+#endif //KL_COMMON_LOG_H_

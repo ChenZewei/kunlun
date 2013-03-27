@@ -9,7 +9,7 @@
 
 CInetAddr::CInetAddr(const char *hostname, int port)
 {
-	SetSockAddr(hostname, port);
+	setsockaddr(hostname, port);
 }
 
 CInetAddr::~CInetAddr()
@@ -22,7 +22,7 @@ CInetAddr& CInetAddr::operator = (const struct sockaddr_in& sockAddr)
 	return *this;
 }
 
-void CInetAddr::SetSockAddr(const char *hostname, int port)
+void CInetAddr::setsockaddr(const char *hostname, int port)
 {
 	memset(&m_SockAddr, 0, sizeof(m_SockAddr));
 	m_SockAddr.sin_family = AF_INET;
@@ -36,26 +36,27 @@ void CInetAddr::SetSockAddr(const char *hostname, int port)
 	}
 }
 
-void CInetAddr::SetSockAddr(const struct sockaddr_in& sockAddr)
+void CInetAddr::setsockaddr(const struct sockaddr_in& sockAddr)
 {
 	memcpy(&m_SockAddr, &sockAddr, sizeof(sockAddr));
 }
 
-struct sockaddr* CInetAddr::GetSockAddr()
+struct sockaddr* CInetAddr::getsockaddr()
 {
 	return (struct sockaddr*)&m_SockAddr;
 }
 
-int CInetAddr::GetPort()
+int CInetAddr::getport()
 {
 	return ntohl(m_SockAddr.sin_port);
 }
 
-int CInetAddr::GetHostName(char *buf, int size)
+int CInetAddr::getHostname(char *buf, int size)
 {
 	int nlen;
 	struct hostent *phostent;
-	phostent = gethostbyaddr(&m_SockAddr.sin_addr, sizeof(struct in_addr), AF_INET);
+	phostent = gethostbyaddr(&m_SockAddr.sin_addr, \
+		sizeof(struct in_addr), AF_INET);
 	if(phostent != NULL){
 		nlen = strlen(phostent->h_name) + 1;
 		if(nlen > size){

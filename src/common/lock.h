@@ -2,15 +2,14 @@
 #define KL_COMMON_LOCK_H_
 
 #include <pthread.h>
-class CMutex
+class CLock
 {
 public:
-	CMutex();
-	virtual ~CMutex();
+	CLock();
+	~CLock();
 
-	int lock();
-	int trylock()
-	int unlock();
+	int Lock();
+	int Unlock();
 private:
 	pthread_mutex_t m_Mutex;
 };

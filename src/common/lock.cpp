@@ -4,23 +4,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include "mutex.h"
+#include "lock.h"
 #include "common_types.h"
 
-CMutex::CMutex()
+CLock::CLock()
 {
 	char msgbuf[KL_COMMON_BUF_SIZE];
 	pthread_mutexattr_t mat;
 	int res;
 
-	if((res = pthread_mutexattr_init(&mat)) != 0){
+	if(pthread_mutexattr_init(&mat) != 0){
 		//kl_errout("pthread_mutexattr_init failed");
 		bzero(msgbuf, KL_COMMON_BUF_SIZE);
 		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
 			"file: "__FILE__", line: %d, " \
-			"call pthread_mutexattr_init failed, " \
-			"err: %s", \
-			__LINE__, strerror(res));
+			"call pthread_mutexattr_init failed, err", \
+			__LINE__);
 		kl_errout(msgbuf);
 	}
 
@@ -29,26 +28,25 @@ CMutex::CMutex()
 		bzero(msgbuf, KL_COMMON_BUF_SIZE);
 		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
 			"file: "__FILE__", line: %d, " \
-			"call pthread_mutexattr_settype failed, " \
-			"err: %s", \
-			__LINE__, strerror(res));
+			"call pthread_mutexattr_settype failed, err", \
+			__LINE__);
 		kl_errout(msgbuf);
 	}
 
-	if((res = pthread_mutex_init(&m_Mutex, &mat)) != 0){
+	if(pthread_mutex_init(&m_Mutex, &mat) != 0){
 		//kl_errout("pthread_mutex_init failed");
 		bzero(msgbuf, KL_COMMON_BUF_SIZE);
 		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
 			"file: "__FILE__", line: %d, "\
-			"call pthread_mutex_init failed, err: %s", \
-			__LINE__, strerror(res));
+			"call pthread_mutex_init failed, err", \
+			__LINE__);
 		kl_errout(msgbuf);
 	}
 
 	pthread_mutexattr_destroy(&mat);
 }
 
-CMutex::~CMutex()
+CLock::~CLock()
 {
 	char msgbuf[KL_COMMON_BUF_SIZE];
 	int res;
@@ -58,23 +56,18 @@ CMutex::~CMutex()
 		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
 			"file: "__FILE__", line: %d ," \
 			"call pthread_mutex_destroy failed, " \
-			"err: %s", \
+			"err: %s\n", \
 			__LINE__, strerror(res));
-		printf("%s\n", msgbuf);
+		printf("%s", msgbuf);
 	}
 }
 
-int CMutex::lock()
+int CLock::Lock()
 {
 	return pthread_mutex_lock(&m_Mutex);
 }
 
-int CMutex::trylock()
-{
-	return pthread_mutex_trylock(&m_Mutex);
-}
-
-int CMutex::unlock()
+int CLock::Unlock()
 {
 	return pthread_mutex_unlock(&m_Mutex);
 }

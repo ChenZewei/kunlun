@@ -1,5 +1,5 @@
-#ifndef _INET_ADDR_H_
-#define _INET_ADDR_H_
+#ifndef KL_COMMON_INET_ADDR_H_
+#define KL_COMMON_INET_ADDR_H_
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -11,12 +11,12 @@ public:
 	CInetAddr& operator = (const struct sockaddr_in& sockAddr);
 	~CInetAddr();
 
-	int GetHostName(char *buf, int size);
-	struct sockaddr* GetSockAddr();
-	void SetSockAddr(const char *hostname, int port);
-	void SetSockAddr(const struct sockaddr_in& sockAddr);
-	int GetPort();
+	int getHostname(char *buf, int size);
+	struct sockaddr* getsockaddr();
+	void setsockaddr(const char *hostname, int port);
+	void setsockaddr(const struct sockaddr_in& sockAddr);
+	int getport();
 private:
 	struct sockaddr_in m_SockAddr;
 };
-#endif //_INET_ADDR_H_
+#endif //KL_COMMON_INET_ADDR_H_
