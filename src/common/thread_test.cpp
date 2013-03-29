@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "thread.h"
-#include "global.h"
 #include "log.h"
 #include "thread_func.h"
 

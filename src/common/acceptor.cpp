@@ -7,7 +7,6 @@
 #include <sys/socket.h>
 #include "acceptor.h"
 #include "log.h"
-#include "global.h"
 
 CAcceptor::CAcceptor(const char *host, int bind_port, \
 	int backlog, int timeout) : \

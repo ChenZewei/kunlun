@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <utility>
 #include "log.h"
-#include "global.h"
 #include "msg_handler.h"
 #include "msg_manager.h"
 

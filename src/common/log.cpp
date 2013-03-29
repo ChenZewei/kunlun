@@ -12,6 +12,8 @@
 #include "log.h"
 #include "common_types.h"
 
+CLog *g_psys_log = NULL;
+
 CLog::CLog(const char *path, LOG_LEVEL level)
 {
 	char msgbuf[KL_COMMON_BUF_SIZE];

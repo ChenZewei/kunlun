@@ -6,7 +6,6 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include "log.h"
-#include "global.h"
 #include "connector.h"
 
 CConnector::CConnector(const char *host, \

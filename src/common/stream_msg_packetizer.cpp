@@ -3,7 +3,6 @@
 #include <errno.h>
 #include <unistd.h>
 #include "log.h"
-#include "global.h"
 #include "msg_queue.h"
 #include "common_types.h"
 #include "common_protocol.h"

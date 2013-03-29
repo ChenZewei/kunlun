@@ -8,7 +8,6 @@
 #include <errno.h>
 #include "sock.h"
 #include "log.h"
-#include "global.h"
 
 CSock::CSock()
 {

@@ -3,7 +3,6 @@
 #include <string.h>
 #include <unistd.h>
 #include "log.h"
-#include "global.h"
 #include "epoll_engine.h"
 
 CEpollEngine::CEpollEngine()

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "log.h"
-#include "global.h"
 #include "msg_queue.h"
 #include "msg_manager.h"
 #include "msg_looper.h"
