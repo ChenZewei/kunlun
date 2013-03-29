@@ -140,11 +140,11 @@ int CAcceptor::setkeepalive(int idleSeconds)
 {
 	int keepAlive;
 
-	//#ifdef OS_LINUX
+#ifdef OS_LINUX
 	int keepIdle;
 	int keepInterval;
 	int keepCount;
-	//#endif
+#endif
 
 	keepAlive = 1;
 	if(setsockopt(m_fd, SOL_SOCKET, SO_KEEPALIVE, \

@@ -41,7 +41,7 @@ void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 			psock_stream_ob = new CStreamMsgPacketizer(m_ppmgs_queue, \
 				m_msg_queue_count);
 			res = Accept(psock_stream_ob);
-			if(res == -1){	//failed or has no connect
+			if(res == -1){	//failed or has no connection
 				delete psock_stream_ob;
 				if(errno == EINTR)
 					continue;
