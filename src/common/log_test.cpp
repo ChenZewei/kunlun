@@ -12,23 +12,23 @@ void* logthread(void *args)
 	int i;
 	int num = 10;
 	for(i = 0; i < 128; i++){
-		pLog->WriteLog(LOG_LEVEL_ERROR, \
+		pLog->writelog(LOG_LEVEL_ERROR, \
 			"write error level %d", num);
-		pLog->WriteLog(LOG_LEVEL_WARNNING, \
+		pLog->writelog(LOG_LEVEL_WARNNING, \
 			"write warnning level %d", num);
-		pLog->WriteLog(LOG_LEVEL_NOTICE, \
+		pLog->writelog(LOG_LEVEL_NOTICE, \
 			"write notice level %d", num);
-		pLog->WriteLog(LOG_LEVEL_INFO, \
+		pLog->writelog(LOG_LEVEL_INFO, \
 			"write info level %d", num);
 
 		num += 10;
-		pLog->WriteLog2(LOG_LEVEL_ERROR, \
+		pLog->writelog2(LOG_LEVEL_ERROR, \
 			"write error level %d", num);
-		pLog->WriteLog2(LOG_LEVEL_WARNNING, \
+		pLog->writelog2(LOG_LEVEL_WARNNING, \
 			"write warnning level %d", num);
-		pLog->WriteLog2(LOG_LEVEL_NOTICE, \
+		pLog->writelog2(LOG_LEVEL_NOTICE, \
 			"write notice level %d", num);
-		pLog->WriteLog2(LOG_LEVEL_INFO, \
+		pLog->writelog2(LOG_LEVEL_INFO, \
 			"write info level %d", num);
 	}
 	gogo++;

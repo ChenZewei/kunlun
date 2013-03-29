@@ -59,11 +59,11 @@ CLog::~CLog()
 	}
 }
 
-int CLog::WriteLog(LOG_LEVEL level, const char *format, ...)
+int CLog::writelog(LOG_LEVEL level, const char *format, ...)
 {
 	va_list ap;
-	char msgbuf[LOG_BUF_SIZE];
-	char buf[LOG_BUF_SIZE];
+	char msgbuf[KL_COMMON_LOG_BUF_SIZE];
+	char buf[KL_COMMON_LOG_BUF_SIZE];
 	char errbuf[KL_COMMON_BUF_SIZE];
 	int res;
 
@@ -71,11 +71,11 @@ int CLog::WriteLog(LOG_LEVEL level, const char *format, ...)
 		return 0; //ignore log
 	}
 
-	bzero(msgbuf, LOG_BUF_SIZE);
+	bzero(msgbuf, KL_COMMON_LOG_BUF_SIZE);
 	va_start(ap, format);
-	vsnprintf(msgbuf, LOG_BUF_SIZE, format, ap);
+	vsnprintf(msgbuf, KL_COMMON_LOG_BUF_SIZE, format, ap);
 	va_end(ap);
-	snprintf(buf, LOG_BUF_SIZE, "[%s]%s\n", \
+	snprintf(buf, KL_COMMON_LOG_BUF_SIZE, "[%s]%s\n", \
 		strlevel(level), msgbuf);
 
 	if(m_plog_rwlock->wrlock() == -1){
@@ -99,11 +99,11 @@ int CLog::WriteLog(LOG_LEVEL level, const char *format, ...)
 	return res;
 }
 
-int CLog::WriteLog2(LOG_LEVEL level, const char *format, ...)
+int CLog::writelog2(LOG_LEVEL level, const char *format, ...)
 {
 	va_list ap;
-	char msgbuf[LOG_BUF_SIZE];
-	char buf[LOG_BUF_SIZE];
+	char msgbuf[KL_COMMON_LOG_BUF_SIZE];
+	char buf[KL_COMMON_LOG_BUF_SIZE];
 	char errbuf[KL_COMMON_BUF_SIZE];
 	int res;
 
@@ -111,11 +111,11 @@ int CLog::WriteLog2(LOG_LEVEL level, const char *format, ...)
 		return 0; //ignore log
 	}
 
-	bzero(msgbuf, LOG_BUF_SIZE);
+	bzero(msgbuf, KL_COMMON_LOG_BUF_SIZE);
 	va_start(ap, format);
-	vsnprintf(msgbuf, LOG_BUF_SIZE, format, ap);
+	vsnprintf(msgbuf, KL_COMMON_LOG_BUF_SIZE, format, ap);
 	va_end(ap);
-	snprintf(buf, LOG_BUF_SIZE, "[%s]%s\n\n", \
+	snprintf(buf, KL_COMMON_LOG_BUF_SIZE, "[%s]%s\n\n", \
 		strlevel(level), msgbuf);
 
 	if(m_plog_rwlock->wrlock() == -1){
@@ -144,7 +144,7 @@ int CLog::doWriteLog(const char *buf)
 	char tbuf[KL_COMMON_BUF_SIZE];
 	char msgbuf[KL_COMMON_BUF_SIZE];
 
-	if(GetLogTime(tbuf, KL_COMMON_BUF_SIZE) == -1){
+	if(getlogtime(tbuf, KL_COMMON_BUF_SIZE) == -1){
 		//printf("get local time failed\n");
 		//kl_perror("get local time failed\n");
 		bzero(msgbuf, KL_COMMON_BUF_SIZE);
@@ -187,7 +187,7 @@ int CLog::doWriteLog(const char *buf)
 	return 0;
 }
 
-int CLog::GetLogTime(char *buf, int size)
+int CLog::getlogtime(char *buf, int size)
 {
 	struct tm *ptm;
 	time_t tn;

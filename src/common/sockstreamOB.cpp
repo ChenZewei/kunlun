@@ -18,36 +18,42 @@ CSockStreamOB::CSockStreamOB(int sock) : \
 {
 }
 
-int CSockStreamOB::GetFd() const
+CSockStreamOB::~CSockStreamOB()
+{
+}
+
+int CSockStreamOB::get_fd() const
 {
 	return getSocket();
 }
 
-void CSockStreamOB::Work(CSubject *pSubject, uint32_t nstatus)
+void CSockStreamOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 {
+	/*
 	char inbuf[100];
 	char outbuf[100];
 	
 	//缓冲区有数据可读
 	if(nstatus & EPOLLIN){
-		if(Recv(inbuf, sizeof(inbuf)) <= 0){
+		if(stream_recv(inbuf, sizeof(inbuf)) <= 0){
 			printf("recv data failed\n");
-			pSubject->Detach(this);
+			psock_notifier->detach(this);
 			delete this;
 			return ;
 		}
 		printf("recv data : %s\n", inbuf);
-		pSubject->SetOBStatus(this, EPOLLOUT | EPOLLET);
+		psock_notifier->set_ob_status(this, EPOLLOUT | EPOLLET);
 	}else if(nstatus & EPOLLOUT){
 		strcpy(outbuf, "send test data from server");
-		if(Send(outbuf, strlen(outbuf) + 1) <= 0){
+		if(stream_send(outbuf, strlen(outbuf) + 1) <= 0){
 			printf("send data failed\n");
-			pSubject->Detach(this);
+			psock_notifier->detach(this);
 			delete this;
 			return ;
 		}
-		pSubject->SetOBStatus(this, EPOLLIN | EPOLLET);
+		psock_notifier->set_ob_status(this, EPOLLIN | EPOLLET);
 	}else{
 		printf("undefined error\n");
 	}
+	*/
 }

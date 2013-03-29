@@ -1,12 +1,5 @@
-/*******************************************
-* Author: Leslie Wei
-* Created Time: 2012年08月14日 星期二 16时29分39秒
-* File Name: connector.h
-* Description: 
-* @Copyright reserved
-********************************************/
-#ifndef _CONNECTOR_H_
-#define _CONNECTOR_H_
+#ifndef KL_COMMON_CONNECTOR_H_
+#define KL_COMMON_CONNECTOR_H_
 #include "sock.h"
 #include "inetaddr.h"
 #include "sockstream.h"
@@ -23,6 +16,6 @@ public:
 	//pSockStream:用于指定一个TCP流，如果连接成功，将初始化一个TCP流
 	int Connect(CSockStream *pSockStream);
 protected:
-	CInetAddr m_serverAddr;
+	CInetAddr m_serveraddr;
 };
-#endif //_CONNECTOR_H_
+#endif //KL_COMMON_CONNECTOR_H_

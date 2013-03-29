@@ -83,7 +83,7 @@ int CSock::getPeerAddr(CInetAddr *paddr)
 	return 0;
 }
 
-void CSock::setNonBlocking()
+void CSock::setnonblocking()
 {
 	int opt;
 

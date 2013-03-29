@@ -1,12 +1,5 @@
-/*******************************************
-* Author: Leslie Wei
-* Created Time: 2012年08月11日 星期六 23时06分53秒
-* File Name: sock.h
-* Description: 
-* @Copyright reserved
-********************************************/
-#ifndef _SOCK_H_
-#define _SOCK_H_
+#ifndef KL_COMMON_SOCK_H_
+#define KL_COMMON_SOCK_H_
 #include "inetaddr.h"
 class CSock
 {
@@ -15,7 +8,7 @@ public:
 	int getSocket() const;
 	int getLocalAddr(CInetAddr *pAddr);
 	int getPeerAddr(CInetAddr *pAddr);
-	void setNonBlocking();
+	void setnonblocking();
 	virtual ~CSock();
 protected:
 	CSock();
@@ -23,4 +16,4 @@ protected:
 
 	int m_fd;
 };
-#endif //_SOCK_H_
+#endif //KL_COMMON_SOCK_H_

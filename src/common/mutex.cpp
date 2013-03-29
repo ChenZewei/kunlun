@@ -35,7 +35,7 @@ CMutex::CMutex()
 		kl_errout(msgbuf);
 	}
 
-	if((res = pthread_mutex_init(&m_Mutex, &mat)) != 0){
+	if((res = pthread_mutex_init(&m_mutex, &mat)) != 0){
 		//kl_errout("pthread_mutex_init failed");
 		bzero(msgbuf, KL_COMMON_BUF_SIZE);
 		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
@@ -52,7 +52,7 @@ CMutex::~CMutex()
 {
 	char msgbuf[KL_COMMON_BUF_SIZE];
 	int res;
-	res = pthread_mutex_destroy(&m_Mutex);
+	res = pthread_mutex_destroy(&m_mutex);
 	if(res != 0){
 		bzero(msgbuf, KL_COMMON_BUF_SIZE);
 		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
@@ -66,15 +66,15 @@ CMutex::~CMutex()
 
 int CMutex::lock()
 {
-	return pthread_mutex_lock(&m_Mutex);
+	return pthread_mutex_lock(&m_mutex);
 }
 
 int CMutex::trylock()
 {
-	return pthread_mutex_trylock(&m_Mutex);
+	return pthread_mutex_trylock(&m_mutex);
 }
 
 int CMutex::unlock()
 {
-	return pthread_mutex_unlock(&m_Mutex);
+	return pthread_mutex_unlock(&m_mutex);
 }

@@ -17,6 +17,6 @@ public:
 	void setsockaddr(const struct sockaddr_in& sockAddr);
 	int getport();
 private:
-	struct sockaddr_in m_SockAddr;
+	struct sockaddr_in m_sockaddr;
 };
 #endif //KL_COMMON_INET_ADDR_H_

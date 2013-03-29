@@ -15,6 +15,9 @@ public:
 	int tryrdlock();
 	int unlock();
 private:
+	CRWLock(const CRWLock&);
+	CRWLock& operator=(const CRWLock&);
+
 	pthread_rwlock_t m_rwlock;
 };
 

@@ -6,9 +6,7 @@
 #include "log.h"
 #include "common_types.h"
 
-CThread::CThread() : \
-	m_pthread_func(this), \
-	m_tid(-1)
+CThread::CThread() : m_pthread_func(this), m_tid(-1)
 {
 #ifdef _DEBUG
 	printf("init thread obj\n");
@@ -20,17 +18,14 @@ CThread::CThread() : \
 	}
 }
 
-CThread::CThread(CThreadFunc *pThreadFunc, \
-	const int stack_size, \
-	bool bdetach) : \
-	m_pthread_func(pThreadFunc), \
-	m_tid(-1)
+CThread::CThread(CThreadFunc *pThreadFunc, const int stack_size, \
+	bool bdetach) : m_pthread_func(pThreadFunc), m_tid(-1)
 {
 #ifdef _DEBUG
 	printf("init thread obj\n");
 #endif //_DEBUG
 	if(init_pthread_attr(stack_size, bdetach) != 0){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, "\
+		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
 			"init thread attribute failed", \
 			__LINE__);
 	}
@@ -87,8 +82,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 	if ((result = pthread_attr_getstacksize(&m_attr, &old_stack_size)) != 0)
 	{
 		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
-			"call pthread_attr_getstacksize failed, " \
-			"err: %s", \
+			"call pthread_attr_getstacksize failed, err: %s", \
 			__LINE__, strerror(result));
 		return result;
 	}
@@ -119,8 +113,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 			new_stack_size)) != 0)
 		{
 			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
-				"call pthread_attr_setstacksize failed, " \
-				"err: %s", \
+				"call pthread_attr_setstacksize failed, err: %s", \
 				__LINE__, strerror(result));
 			return result;
 		}
@@ -135,8 +128,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 		detach_stat)) != 0)
 	{
 		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
-			"call pthread_attr_setdetachstate failed, " \
-			"err: %s", \
+			"call pthread_attr_setdetachstate failed, err: %s", \
 			__LINE__, strerror(result));
 		return result;
 	}
@@ -144,8 +136,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 	if((result = pthread_attr_setscope(&m_attr, \
 		PTHREAD_SCOPE_SYSTEM)) != 0){
 		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
-			"set thread to system level failed, " \
-			"err: %s", \
+			"set thread to system level failed, err: %s", \
 			__LINE__, strerror(result));
 		return result;
 	}

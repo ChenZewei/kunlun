@@ -1,10 +1,3 @@
-/*******************************************
-* Author: Leslie Wei
-* Created Time: 2012年08月14日 星期二 17时57分07秒
-* File Name: epollclient.cpp
-* Description: 
-* @Copyright reserved
-********************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

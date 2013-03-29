@@ -1,14 +1,17 @@
-#ifndef _SOCK_STREAM_OB_H_
-#define _SOCK_STREAM_OB_H_
+#ifndef KL_COMMON_SOCK_STREAM_OB_H_
+#define KL_COMMON_SOCK_STREAM_OB_H_
 #include "sockstream.h"
-#include "observer.h"
-class CSockStreamOB : public CSockStream, public CObserver
+#include "sockobserver.h"
+class CMsgQueue;
+class CSockStreamOB : public CSockStream, \
+	public CSockObserver
 {
 public:
 	CSockStreamOB();
 	CSockStreamOB(int sock);
+	virtual ~CSockStreamOB();
 
-	int GetFd() const;
-	void Work(CSubject *pSubject, uint32_t nstatus);
+	int get_fd() const;
+	virtual void work(CSockNotifier *psock_notifier, uint32_t nstatus);
 };
-#endif //_SOCK_STREAM_OB_H_
+#endif //KL_COMMON_SOCK_STREAM_OB_H_

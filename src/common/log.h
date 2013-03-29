@@ -1,7 +1,7 @@
 #ifndef KL_COMMON_LOG_H_
 #define KL_COMMON_LOG_H_
 
-#define LOG_BUF_SIZE 1024
+#define KL_COMMON_LOG_BUF_SIZE 1024
 
 class CFile;
 class CRWLock;
@@ -15,9 +15,9 @@ public:
 	CLog(const char *path, LOG_LEVEL level);
 	~CLog();
 
-	int WriteLog(LOG_LEVEL level, const char *format, ...);
+	int writelog(LOG_LEVEL level, const char *format, ...);
 	/* WriteLog2() has two \n rather than WriteLog() has one */
-	int WriteLog2(LOG_LEVEL level, const char *format, ...);
+	int writelog2(LOG_LEVEL level, const char *format, ...);
 private:
 	CLog(const CLog& log);
 	CLog& operator= (const CLog& log);
@@ -26,9 +26,9 @@ private:
 	/* convert level from number to string */
 	const char* strlevel(LOG_LEVEL level);
 	/* format: 0000-00-00 00:00:00 */
-	int GetLogTime(char *buf, int size);
+	int getlogtime(char *buf, int size);
 private:
-	CFile *m_pLogFile;
+	CFile *m_plog_file;
 	CRWLock *m_plog_rwlock;
 	LOG_LEVEL m_level;
 };

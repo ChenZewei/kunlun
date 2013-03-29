@@ -1,10 +1,3 @@
-/*******************************************
-* Author: Leslie Wei
-* Created Time: 2012年08月13日 星期一 23时24分55秒
-* File Name: sockstream.cpp
-* Description: 
-* @Copyright reserved
-********************************************/
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -19,16 +12,16 @@ CSockStream::CSockStream() : CSock()
 
 CSockStream::CSockStream(int sock)
 {
-	SetSockStream(sock);
+	setsockstream(sock);
 }
 
-void CSockStream::SetSockStream(int sock)
+void CSockStream::setsockstream(int sock)
 {
 	m_fd = sock;
-	setNonBlocking();
+	setnonblocking();
 }
 
-int CSockStream::Send(const void *buf, size_t len)
+int CSockStream::stream_send(const void *buf, size_t len)
 {
 	int nleft;
 	int nwrite;
@@ -44,10 +37,10 @@ int CSockStream::Send(const void *buf, size_t len)
 			if(errno == EINTR || errno == EAGAIN){
 				usleep(1000);
 				continue;
-			} //被中断抢占或者写缓冲区满
-			return -1; //其它错误
+			} //was interrupted or buffer is full
+			return -1; //other error
 		}else if(nwrite == 0){
-			return 0;	//对方被关闭
+			return 0;	//opposite side was closed
 		}
 
 		nleft -= nwrite;
@@ -56,7 +49,7 @@ int CSockStream::Send(const void *buf, size_t len)
 	return len - nleft;
 }
 
-int CSockStream::Recv(void *buf, size_t len)
+int CSockStream::stream_recv(void *buf, size_t len)
 {
 	int nleft;
 	int nread;
@@ -70,16 +63,16 @@ int CSockStream::Recv(void *buf, size_t len)
 		nread = recv(m_fd, ptr, nleft, 0);
 		if(nread < 0){
 			if(errno == EINTR){
-				//被中断抢占
+				//was interrupted
 				usleep(1000);
 				continue;
 			}else if(errno == EAGAIN){
-				//缓冲区无数据，读操作结束
+				//buffer is empty
 				return len - nleft;
 			}
 			return -1;
 		}else if(nread == 0){
-			//对方已关闭
+			//opposite side was closed
 			return 0;
 		}
 
