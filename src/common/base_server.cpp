@@ -48,7 +48,6 @@ CBaseServer::~CBaseServer()
 
 int CBaseServer::initilize()
 {
-	typedef CMsgQueue* CMsgQueuePtr;
 	typedef CThread* CThreadPtr;
 
 	int nwork_thread_curr;

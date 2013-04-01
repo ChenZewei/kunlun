@@ -1,3 +1,4 @@
+.SUFFIXES: .cpp .o
 OBJECTS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epoll_engine.o epollclient.o \
 	epollserver.o event.o file.o file_test.o inetaddr.o log.o log_test.o msg_looper.o msg_parser.o \
 	msg_queue.o mutex.o rwlock.o sock.o socknotifier.o sockobserver.o sockstream.o sockstreamOB.o \
@@ -11,28 +12,24 @@ EPOLLSERVER_OBJS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epol
 	socknotifier.o sockobserver.o sockstream.o sockstreamOB.o stream_msg_packetizer.o thread.o thread_msg_recv.o
 EPOLLCLIENT_OBJS = epollclient.o
 BIN_DIR = ~/src/kunlun/bin
-COMPILE = g++ 
-CFLAGS = -Wall -pthread -g -D_DEBUG
+COMPILE = g++ -pthread -g -D_DEBUG
 
-file_test : $(FILE_TEST_OBJS)
-	$(COMPILE) -o $(BIN_DIR)/file_test $(FILE_TEST_OBJS) $(CFLAGS)
-$(FILE_TEST_OBJS) : $(HEADERS)
+all : $(EPOLLSERVER_OBJS) $(EPOLLCLIENT_OBJS) epollserver epollclient
 
-log_test : $(LOG_TEST_OBJS)
-	$(COMPILE) -o $(BIN_DIR)/log_test $(LOG_TEST_OBJS) $(CFLAGS)
-$(LOG_TEST_OBJS) : $(HEADERS)
+.o:
+	$(COMPILE) -o $@ $<
 
-thread_test : $(THREAD_TEST_OBJS)
-	$(COMPILE) -o $(BIN_DIR)/thread_test $(THREAD_TEST_OBJS) $(CFLAGS)
-$(THREAD_TEST_OBJS) : $(HEADERS)
+.cpp:
+	$(COMPILE) -o $@ $<
+
+.cpp.o:
+	$(COMPILE) -c -o $@ $<
 
 epollserver : $(EPOLLSERVER_OBJS)
-	$(COMPILE) -o $(BIN_DIR)/epollserver $(EPOLLSERVER_OBJS) $(CFLAGS)
-$(EPOLLSERVER_OBJS) : $(HEADERS)
+	$(COMPILE) -o $(BIN_DIR)/epollserver $(EPOLLSERVER_OBJS)
 
 epollclient : $(EPOLLCLIENT_OBJS)
-	$(COMPILE) -o $(BIN_DIR)/epollclient $(EPOLLCLIENT_OBJS) $(CFLAGS)
-$(EPOLLCLIENT_OBJS) : $(HEADERS)
+	$(COMPILE) -o $(BIN_DIR)/epollclient $(EPOLLCLIENT_OBJS)
 
 .PHONY : clean
 clean : 

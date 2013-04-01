@@ -73,7 +73,7 @@ int CEpollEngine::attach(CSockObserver *psock_observer, uint32_t nstatus)
 
 #ifdef _DEBUG
 	assert(m_epfd > 0 && psock_observer);
-	printf("sock_observer(fd: %d) attach with epoll(fd: %d), status: %d", \
+	printf("sock_observer(fd: %d) attach with epoll(fd: %d), status: %d\n", \
 		psock_observer->get_fd(), m_epfd, nstatus);
 #endif //_DEBUG
 
@@ -96,7 +96,7 @@ int CEpollEngine::detach(CSockObserver *psock_observer)
 
 #ifdef _DEBUG
 	assert(m_epfd > 0 && psock_observer);
-	printf("sock_observer(fd: %d) detach with epoll(fd: %d)", \
+	printf("sock_observer(fd: %d) detach with epoll(fd: %d)\n", \
 		psock_observer->get_fd(), m_epfd);
 #endif //_DEBUG
 
