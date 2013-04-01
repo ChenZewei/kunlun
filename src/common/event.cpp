@@ -4,7 +4,6 @@
 #include "cond.h"
 #include "event.h"
 #include "log.h"
-#include "global.h"
 
 CEvent::CEvent() : m_nsignal(0), m_signal_cond(), \
 	m_bsemaphore(false), m_signal_mutex()

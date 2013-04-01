@@ -4,6 +4,11 @@
 #include "sock.h"
 #include "sockstream.h"
 #include "inetaddr.h"
+/*
+ * @description: CAcceptor is a factory, acceptor accept the connection 
+                 requested  by conncetor and initilize a sock stream by using
+				 the connected sock
+ */
 class CAcceptor : public CSock
 {
 public:

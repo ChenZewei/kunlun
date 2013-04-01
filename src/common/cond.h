@@ -16,7 +16,7 @@ private:
 	CCond(const CCond&);
 	CCond& operator=(const CCond&);
 
-	pthread_conde_t m_cond;
+	pthread_cond_t m_cond;
 };
 
 #endif //KL_COMMON_COND_H_

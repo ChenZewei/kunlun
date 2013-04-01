@@ -8,10 +8,8 @@
 #include "log.h"
 #include "connector.h"
 
-CConnector::CConnector(const char *host, \
-	int port, int bport /*= -1*/) : \
-	CSock(AF_INET, SOCK_STREAM), \
-	m_serveraddr(host, port)
+CConnector::CConnector(const char *host, int port, int bport /*= -1*/) : \
+	CSock(AF_INET, SOCK_STREAM), m_serveraddr(host, port), m_isconnected(false)
 {
 	int res;
 	if(bport != -1){
@@ -26,13 +24,10 @@ CConnector::CConnector(const char *host, \
 		bind(m_fd, bindAddr.getsockaddr(), \
 			sizeof(struct sockaddr));
 	}
-	setnonblocking();
 }
 
-CConnector::CConnector(const CInetAddr& serverAddr, \
-	int bport /*= -1*/) : \
-	CSock(AF_INET, SOCK_STREAM), \
-	m_serveraddr(serverAddr)
+CConnector::CConnector(const CInetAddr& serverAddr, int bport /*= -1*/) : \
+	CSock(AF_INET, SOCK_STREAM), m_serveraddr(serverAddr), m_isconnected(false)
 {
 	int res;
 	if(bport != -1){
@@ -47,7 +42,18 @@ CConnector::CConnector(const CInetAddr& serverAddr, \
 		bind(m_fd, bindAddr.getsockaddr(), \
 			sizeof(struct sockaddr));
 	}
-	setnonblocking();
+}
+
+CConnector::~CConnector()
+{
+	/* 
+	 * if socket is connected, the socket has been pass to sock stream and
+	   it will be closed by sock stream, set m_fd to -1 just prevent connector
+	   close the socket when connector was deleted, otherwise, the sock stream
+	   will be call failed.
+	 */
+	if(m_isconnected)
+		m_fd = -1;
 }
 
 int CConnector::Connect(CSockStream *pSockStream)
@@ -59,5 +65,7 @@ int CConnector::Connect(CSockStream *pSockStream)
 		return -1;
 	}
 	pSockStream->setsockstream(m_fd);
+	//connect successfully, connector dispatch sock fd to sock stream
+	m_isconnected = true;
 	return 0;
 }

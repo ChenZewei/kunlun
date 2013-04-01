@@ -2,22 +2,22 @@
 #define KL_COMMON_MSG_LOOPER_H_
 #include "thread_func.h"
 class CMsgQueue;
-class CMsgManager;
+class CMsgParser;
 class CMsgLooper : public CThreadFunc
 {
 public:
 	/*
 	 * @param: pmsg_queue, msg looper get msg from the queue
-	 * @param: pmsg_manager, register msg and despatch msg,
-				must be created on heap and deleted by msg looper
+	 * @param: pmsg_parser, set a parser to parse msg, msg parser
+			   is shared by every work thread, can't be deleted in msg looper
 	 */
-	CMsgLooper(CMsgQueue *pmsg_queue, CMsgManager *pmsg_manager);
+	CMsgLooper(CMsgQueue *pmsg_queue, CMsgParser *pmsg_parser);
 	~CMsgLooper();
 
 	virtual int run();
 private:
 	CMsgQueue *m_pmsg_queue;
-	CMsgManager *m_pmsg_manager;
+	CMsgParser *m_pmsg_parser;
 };
 
 #endif //KL_COMMON_MSG_LOOPER_H_

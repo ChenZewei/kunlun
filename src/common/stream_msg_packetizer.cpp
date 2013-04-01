@@ -2,30 +2,33 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 #include "log.h"
 #include "msg_queue.h"
 #include "common_types.h"
 #include "common_protocol.h"
 #include "stream_msg_packetizer.h"
 
-CStreamMsgPacketizer::CStreamMsgPacketizer(CMsgQueue **ppmsg_queue, \
-	int msg_queue_count) : CSockStreamOB(), m_nbody_recv(0), \
-	m_nheader_recv(0), m_pkg_header(), m_pbody(NULL), \
-	m_ppstream_msg_queue(ppmsg_queue), m_msg_queue_count(msg_queue_count), \
-	m_queue_robin_count(0)
+CStreamMsgPacketizer::CStreamMsgPacketizer(CMsgQueueArr *msg_queue_arr_ptr) : \
+	CSockStreamOB(), m_nbody_recv(0), m_nheader_recv(0), m_pkg_header(), \
+	m_pbody(NULL), m_pmsg_queue_arr(msg_queue_arr_ptr)
 {
 }
 
 CStreamMsgPacketizer::CStreamMsgPacketizer(int sock, \
-	CMsgQueue **ppmsg_queue, int msg_queue_count) : \
+	CMsgQueueArr *msg_queue_arr_ptr) : \
 	CSockStreamOB(sock), m_nheader_recv(0), m_nbody_recv(0), \
-	m_pkg_header(), m_pbody(NULL), m_ppstream_msg_queue(ppmsg_queue), \
-	m_msg_queue_count(msg_queue_count), m_queue_robin_count(0)
+	m_pkg_header(), m_pbody(NULL), m_pmsg_queue_arr(msg_queue_arr_ptr)
 {
 }
 
 CStreamMsgPacketizer::~CStreamMsgPacketizer()
 {
+	if(m_pbody != NULL)
+	{
+		delete m_pbody;
+		m_pbody = NULL;
+	}
 }
 
 void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
@@ -41,9 +44,12 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 		nbytes_recv = stream_recv(buf, KL_COMMON_BUF_SIZE);
 		if(nbytes_recv <= 0)
 		{
-			KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
-				"stream(fd: %d) recv failed, err: %s", \
-				__LINE__, get_fd(), strerror(errno));
+			if(EAGAIN != errno)
+			{
+				KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+					"stream(fd: %d) recv failed, err: %s", \
+					__LINE__, get_fd(), strerror(errno));
+			}
 			psock_notifier->detach(this);
 			delete this;
 			return;
@@ -83,26 +89,25 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 					m_nbody_recv += nbytes_recv;
 					return;
 				}
-				memcpy((void*)(&m_pkg_header + m_nbody_recv + 2), pbuf, \
+				memcpy((void*)(m_pbody + m_nbody_recv + 2), pbuf, \
 					nbytes_body - m_nbody_recv);
 				nbytes_recv -= nbytes_body - m_nbody_recv;
 				pbuf += nbytes_body - m_nbody_recv;
-				//push to message queue
+				//push msg pkg to message queue
 #ifdef _DEBUG
 				printf("file: "__FILE__", line: %d, " \
-					"push msg(cmd = %d) to msg queue(id = %d)", \
-					__LINE__, m_pkg_header.cmd, m_queue_robin_count);
+					"push msg(cmd = %d) to msg queue(id = %d)\n", \
+					__LINE__, m_pkg_header.cmd, m_pmsg_queue_arr->m_queue_robin);
 #endif //_DEBUG
 				pkg_message *pkg_msg_ptr = new pkg_message();
 				pkg_msg_ptr->msg_stream_ptr = (void*)this;
 				pkg_msg_ptr->pkg_len = nbytes_body + 2;
 				pkg_msg_ptr->pkg_ptr = m_pbody;
-				m_ppstream_msg_queue[m_queue_robin_count++]->push_msg(pkg_msg_ptr);
+				//m_ppstream_msg_queue[m_queue_robin_count++]->push_msg(pkg_msg_ptr);
+				(m_pmsg_queue_arr->getmsgqueuebyrobin())->push_msg(pkg_msg_ptr);
 				m_pbody = NULL;
 				m_nbody_recv = 0;
 				m_nheader_recv = 0;
-				if(m_queue_robin_count == m_msg_queue_count)
-					m_queue_robin_count = 0;
 				memset(&m_pkg_header, 0, sizeof(pkg_header));
 			}
 		}

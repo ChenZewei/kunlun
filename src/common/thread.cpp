@@ -2,7 +2,6 @@
 #include <string.h>
 #include <strings.h>
 #include "thread.h"
-#include "global.h"
 #include "log.h"
 #include "common_types.h"
 

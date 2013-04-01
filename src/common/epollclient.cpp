@@ -9,8 +9,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include "common_protocol.h"
 
 #define gettid() syscall(SYS_gettid)
+
+#define KL_COMMON_PROTOCOL_MSG_TEST1 0
+//#define KL_COMMON_PROTOCOL_MSG_TEST2 1
+//#define KL_COMMON_PROTOCOL_MSG_TEST3 2
+#define KL_COMMON_PROTOCOL_MSG_SERVER_RESP 3
+typedef pkg_header base_msg_header;
 
 pthread_mutex_t io_lock;
 void* client_process(void *args);
@@ -79,18 +86,25 @@ void* client_process(void *args)
 		return NULL;
 	}
 	
-	sprintf(outbuf, "client %d send test data", gettid());
+	sprintf(outbuf, "client(thread: %ld) send test1 data", gettid());
+	base_msg_header base_header;
 	for(i = 0; i < 20; i++){
-		send(sock_fd, outbuf, strlen(outbuf) + 1, 0);
+		base_header.cmd = KL_COMMON_PROTOCOL_MSG_TEST1;
+		base_header.status = 0;
+		CSERIALIZER::long2buff(strlen(outbuf), base_header.pkg_len);
+		send(sock_fd, &base_header, sizeof(base_msg_header), 0);
+		send(sock_fd, outbuf, strlen(outbuf), 0);
 		pthread_mutex_lock(&io_lock);
-		printf("%d send data to server\n", gettid());
+		printf("client(thread: %ld) send data to server\n", gettid());
 		pthread_mutex_unlock(&io_lock);
 
+		recv(sock_fd, &base_header, sizeof(base_msg_header), 0);
 		recv(sock_fd, inbuf, sizeof(inbuf), 0);
 		pthread_mutex_lock(&io_lock);
-		printf("%d recv data from server: %s\n", gettid(), inbuf);
+		printf("client(thread: %ld) recv data from server: %s\n", gettid(), inbuf);
 		pthread_mutex_unlock(&io_lock);
 	}
+	close(sock_fd);
 	delete pta;
 	return NULL;
 }

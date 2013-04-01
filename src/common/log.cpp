@@ -18,8 +18,7 @@ CLog::CLog(const char *path, LOG_LEVEL level)
 {
 	char msgbuf[KL_COMMON_BUF_SIZE];
 
-	m_plog_file = new CFile(path, \
-		O_RDWR | O_CREAT | O_APPEND, \
+	m_plog_file = new CFile(path, O_RDWR | O_CREAT | O_APPEND, \
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if(m_plog_file == NULL){
 		//perror("open(or create) log file failed");

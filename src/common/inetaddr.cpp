@@ -41,7 +41,7 @@ void CInetAddr::setsockaddr(const struct sockaddr_in& sockAddr)
 	memcpy(&m_sockaddr, &sockAddr, sizeof(sockAddr));
 }
 
-struct sockaddr* CInetAddr::getSockaddr()
+struct sockaddr* CInetAddr::getsockaddr()
 {
 	return (struct sockaddr*)&m_sockaddr;
 }

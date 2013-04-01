@@ -7,23 +7,21 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include "log.h"
-#include "global.h"
 #include "msg_queue.h"
 #include "acceptorOB.h"
 #include "stream_msg_packetizer.h"
 
 CAcceptorOB::CAcceptorOB(const char *host, int bind_port, \
-	int backlog, int timeout, CMsgQueue **ppmsg_queue, \
-	int msg_queue_count) : CAcceptor(host, bind_port, \
-	backlog, timeout), m_ppmgs_queue(ppmsg_queue), \
-	m_msg_queue_count(msg_queue_count)
+	int backlog, int timeout, CMsgQueueArr *msg_queue_arr_ptr) : \
+	CAcceptor(host, bind_port, backlog, timeout), \
+	m_pmsg_queue_arr(msg_queue_arr_ptr)
 {
 }
 
 CAcceptorOB::CAcceptorOB(CInetAddr& sockAddr, int backlog, \
-	int timeout, CMsgQueue **ppmsg_queue, int msg_queue_count) : \
-	CAcceptor(sockAddr, backlog, timeout), m_ppmgs_queue(ppmsg_queue), \
-	m_msg_queue_count(msg_queue_count)
+	int timeout,CMsgQueueArr *msg_queue_arr_ptr) : \
+	CAcceptor(sockAddr, backlog, timeout), \
+	m_pmsg_queue_arr(msg_queue_arr_ptr)
 {
 }
 
@@ -38,8 +36,7 @@ void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 	CSockStreamOB *psock_stream_ob;
 	if(nstatus & EPOLLIN){
 		while(true){
-			psock_stream_ob = new CStreamMsgPacketizer(m_ppmgs_queue, \
-				m_msg_queue_count);
+			psock_stream_ob = new CStreamMsgPacketizer(m_pmsg_queue_arr);
 			res = Accept(psock_stream_ob);
 			if(res == -1){	//failed or has no connection
 				delete psock_stream_ob;
@@ -51,6 +48,7 @@ void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 				EPOLLIN | EPOLLET) != 0)
 			{
 				delete psock_stream_ob;
+				psock_stream_ob = NULL;
 			}
 		}
 		return;

@@ -2,29 +2,24 @@
 #include <unistd.h>
 #include "log.h"
 #include "msg_queue.h"
-#include "msg_manager.h"
+#include "msg_parser.h"
 #include "msg_looper.h"
 #include "common_protocol.h"
 
 CMsgLooper::CMsgLooper(CMsgQueue *pmsg_queue, \
-	CMsgManager *pmsg_manager) : m_pmsg_queue(pmsg_queue), \
-	m_pmsg_manager(pmsg_manager)
+	CMsgParser *pmsg_parser) : m_pmsg_queue(pmsg_queue), \
+	m_pmsg_parser(pmsg_parser)
 {
 }
 
 CMsgLooper::~CMsgLooper()
 {
-	if(m_pmsg_manager != NULL)
-	{
-		delete m_pmsg_manager;
-		m_pmsg_manager = NULL;
-	}
 }
 
 int CMsgLooper::run()
 {
 	pkg_message *pkg_msg_ptr;
-	if(m_pmsg_manager == NULL)
+	if(m_pmsg_parser == NULL)
 	{
 		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
 			"m_pmsg_manager is null", \
@@ -49,12 +44,12 @@ int CMsgLooper::run()
 			continue;
 		}
 
-		if(m_pmsg_manager->despatch_msg(pkg_msg_ptr) != 0)
+		if(m_pmsg_parser->parse_msg(pkg_msg_ptr) != 0)
 		{
-			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
-				"msg manager despatch msg failed", \
+			KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+				"msg parser parse msg failed", \
 				__LINE__);
-			return -1;
+			continue;
 		}
 	}
 

@@ -3,7 +3,7 @@
 #include "acceptor.h"
 #include "sockobserver.h"
 #include "inetaddr.h"
-class CMsgQueue;
+class CMsgQueueArr;
 class CAcceptorOB : public CAcceptor, public CSockObserver
 {
 public:
@@ -12,16 +12,18 @@ public:
 	 * @param: msg_queue_count, msg queue size
 	 */
 	CAcceptorOB(const char *host, int bind_port, \
-		int backlog, int timeout, CMsgQueue **ppmsg_queue, \
-		int msg_queue_count);
+		int backlog, int timeout, CMsgQueueArr *msg_queue_arr_ptr);
 	CAcceptorOB(CInetAddr& sockAddr, int backlog, \
-		int timeout, CMsgQueue **ppmsg_queue, int msg_queue_count);
-
+		int timeout, CMsgQueueArr *msg_queue_arr_ptr);
+	/*
+	 * @description: work function accept connection requested by connector 
+	                 and attach the sock stream corresponding with
+					 the connection with epoll engine
+	 */
 	void work(CSockNotifier *psock_notifier, \
 		uint32_t nstatus);
 	int get_fd() const;
 private:
-	CMsgQueue **m_ppmgs_queue;
-	int m_msg_queue_count;
+	CMsgQueueArr *m_pmsg_queue_arr;
 };
 #endif //_ACCEPTOR_OB_H_

@@ -23,6 +23,7 @@ CSock::~CSock()
 {
 	if(m_fd != -1){
 		close(m_fd);
+		m_fd = -1;
 	}
 }
 

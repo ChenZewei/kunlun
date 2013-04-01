@@ -1,6 +1,6 @@
 #include <pthread.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 #include <strings.h>
 #include "cond.h"
 #include "common_types.h"
@@ -40,11 +40,11 @@ int CCond::timed_wait(CMutex *mutex_ptr, int timeout)
 	struct timeval now;
 	struct timespec time_out;
 
-	gettimeofday(&now);
+	gettimeofday(&now, NULL);
 	time_out.tv_sec = now.tv_sec + timeout;
 	time_out.tv_nsec = now.tv_usec * 1000;
 
-	return pthread_cond_wait(&m_cond, \
+	return pthread_cond_timedwait(&m_cond, \
 		&(mutex_ptr->m_mutex), &time_out);
 }
 

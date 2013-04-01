@@ -3,6 +3,10 @@
 #include "sock.h"
 #include "inetaddr.h"
 #include "sockstream.h"
+/*
+ * @description: connector is a sock stream factory, if connected 
+				 successfully, connector will initilize a sock stream
+ */
 class CConnector : public CSock
 {
 public:
@@ -12,10 +16,11 @@ public:
 	CConnector(const char *host, int port, int bport = -1);
 	//serverAddr:服务端的地址
 	CConnector(const CInetAddr& serverAddr, int bport = -1);
+	~CConnector();
 
-	//pSockStream:用于指定一个TCP流，如果连接成功，将初始化一个TCP流
 	int Connect(CSockStream *pSockStream);
 protected:
 	CInetAddr m_serveraddr;
+	bool m_isconnected;
 };
 #endif //KL_COMMON_CONNECTOR_H_

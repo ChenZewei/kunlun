@@ -4,10 +4,13 @@
 #include <unistd.h>
 #include "log.h"
 #include "epoll_engine.h"
+#ifdef _DEBUG
+#include <assert.h>
+#endif //_DEBUG
 
 CEpollEngine::CEpollEngine()
 {
-	if(open(KL_COMMON_EPOLL_FD_SIZE) !=0)
+	if(open(KL_COMMON_EPOLL_FD_SIZE) == -1)
 	{
 		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
 			"create epoll fd failed, err: %s", \
@@ -20,7 +23,7 @@ CEpollEngine::CEpollEngine()
 
 CEpollEngine::CEpollEngine(int size, int timeout)
 {
-	if(open(size) != 0)
+	if(open(size) != -1)
 	{
 		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
 			"create epoll fd failed, err: %s", \
@@ -31,13 +34,16 @@ CEpollEngine::CEpollEngine(int size, int timeout)
 	memset(m_events, 0, sizeof(m_events));
 }
 
+/*
+ * @description: before deleting epoll, need to detach epoll with
+                 the object of observer, and delete all observer lefted
+				 in the ob_list
+ */
 CEpollEngine::~CEpollEngine()
 {
-	//首先需要将list中未被解除绑定的观察者全部解除
-	//再将对象删除
 	std::list<CSockObserver*>::iterator iter;
 	CSockObserver *psock_ob;
-	for(iter = m_ObList.begin(); iter != m_ObList.end(); iter++){
+	for(iter = m_ob_list.begin(); iter != m_ob_list.end(); iter++){
 		psock_ob = *(iter);
 		if(epoll_ctl(m_epfd, EPOLL_CTL_DEL, psock_ob->get_fd(), \
 			NULL) != 0)
@@ -62,14 +68,12 @@ int CEpollEngine::open(int size)
 int CEpollEngine::attach(CSockObserver *psock_observer, uint32_t nstatus)
 {
 	struct epoll_event ev;
-	if(m_epfd == -1 || psock_observer == NULL)
-		return ;
-
 	ev.data.ptr = (void*)psock_observer;
 	ev.events = nstatus;
 
 #ifdef _DEBUG
-	printf("sock_observer (fd: %d) attach with epoll (fd: %d), status: %d", \
+	assert(m_epfd > 0 && psock_observer);
+	printf("sock_observer(fd: %d) attach with epoll(fd: %d), status: %d", \
 		psock_observer->get_fd(), m_epfd, nstatus);
 #endif //_DEBUG
 
@@ -77,23 +81,22 @@ int CEpollEngine::attach(CSockObserver *psock_observer, uint32_t nstatus)
 		&ev) != 0)
 	{
 		KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
-			"attach fd: %d failed, err: %s", \
+			"sock_observer(fd: %d) attach with epoll(fd: %d) failed, err: %s", \
 			__LINE__, psock_observer->get_fd(), strerror(errno));
 		return -1;
 	}
 	
-	m_ObList.push_back(psock_observer);
+	m_ob_list.push_back(psock_observer);
 	return 0;
 }
 
 int CEpollEngine::detach(CSockObserver *psock_observer)
 {
 	int res;
-	if(m_epfd == -1 || psock_observer == NULL)
-		return ;
 
 #ifdef _DEBUG
-	printf("sock_observer (fd: %d) detach with epoll (fd: %d)", \
+	assert(m_epfd > 0 && psock_observer);
+	printf("sock_observer(fd: %d) detach with epoll(fd: %d)", \
 		psock_observer->get_fd(), m_epfd);
 #endif //_DEBUG
 
@@ -101,19 +104,19 @@ int CEpollEngine::detach(CSockObserver *psock_observer)
 		NULL) != 0)
 	{
 		KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
-			"detach fd: %d failed, err: %s", \
+			"sock_observer(fd: %d) detach with epoll(fd: %d) failed, err: %s", \
 			__LINE__, psock_observer->get_fd(), strerror(errno));
 	}
-	m_ObList.remove(psock_observer);
+	m_ob_list.remove(psock_observer);
 	return res;
 }
 
-void CEpollEngine::Stop()
+void CEpollEngine::stop()
 {
 	m_stop_flag = true;
 }
 
-void CEpollEngine::run()
+int CEpollEngine::notify()
 {
 	int nfds;
 	int i;
@@ -121,13 +124,12 @@ void CEpollEngine::run()
 
 	m_stop_flag = false;
 	while(m_stop_flag != true){
-		nfds = epoll_wait(m_epfd, m_events, \
-			KL_COMMON_EPOLL_FD_SIZE, m_timeout);
+		nfds = epoll_wait(m_epfd, m_events, KL_COMMON_EPOLL_FD_SIZE, m_timeout);
 		if(nfds == -1){
 			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
-				"epoll_wait was interrupted, err: %s", \
+				"epoll_wait was interrupted, epoll engine stop to work, err: %s", \
 				__LINE__, strerror(errno));
-			break;
+			return -1;
 		}
 
 		for(i = 0; i < nfds; i++){
@@ -137,6 +139,7 @@ void CEpollEngine::run()
 	}
 	KL_SYS_NOTICELOG("file: "__FILE__", line: %d, " \
 		"epoll engine stop to work", __LINE__);
+	return 0;
 }
 
 int CEpollEngine::set_ob_status(CSockObserver *psock_observer, uint32_t nstatus)
@@ -150,8 +153,8 @@ int CEpollEngine::set_ob_status(CSockObserver *psock_observer, uint32_t nstatus)
 	if(epoll_ctl(m_epfd, EPOLL_CTL_MOD, psock_observer->get_fd(), \
 		&ev) != 0)
 	{
-		KL_SYS_WARNNINGLOG("file: "__LINE__", line: %d, " \
-			"set fd: %d to status: %d failed, err: %s", \
+		KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+			"set sock_observer(fd: %d) to status: %d failed, err: %s", \
 			__LINE__, nstatus, strerror(errno));
 		return -1;
 	}
