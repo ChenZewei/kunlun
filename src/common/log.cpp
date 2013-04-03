@@ -1,11 +1,10 @@
 #include <stdio.h>
+#include <time.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
-#include <time.h>
-#include <strings.h>
 #include <sys/types.h>
 #include "rwlock.h"
 #include "file.h"
@@ -87,7 +86,7 @@ int CLog::writelog(LOG_LEVEL level, const char *format, ...)
 			__LINE__);
 		perror(errbuf);
 	}
-	res = doWriteLog(buf);
+	res = dowritelog(buf);
 	if(m_plog_rwlock->unlock() == -1){
 		bzero(errbuf, KL_COMMON_BUF_SIZE);
 		snprintf(errbuf, KL_COMMON_BUF_SIZE, \
@@ -100,47 +99,7 @@ int CLog::writelog(LOG_LEVEL level, const char *format, ...)
 	return res;
 }
 
-int CLog::writelog2(LOG_LEVEL level, const char *format, ...)
-{
-	va_list ap;
-	char msgbuf[KL_COMMON_LOG_BUF_SIZE];
-	char buf[KL_COMMON_LOG_BUF_SIZE];
-	char errbuf[KL_COMMON_BUF_SIZE];
-	int res;
-
-	if(level > m_level){
-		return 0; //ignore log
-	}
-
-	bzero(msgbuf, KL_COMMON_LOG_BUF_SIZE);
-	va_start(ap, format);
-	vsnprintf(msgbuf, KL_COMMON_LOG_BUF_SIZE, format, ap);
-	va_end(ap);
-	snprintf(buf, KL_COMMON_LOG_BUF_SIZE, "[%s]%s\n\n", \
-		strlevel(level), msgbuf);
-
-	if(m_plog_rwlock->wrlock() == -1){
-		bzero(errbuf, KL_COMMON_BUF_SIZE);
-		snprintf(errbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
-			"call wrlock failed, err", \
-			__LINE__);
-		perror(errbuf);
-	}
-	res = doWriteLog(buf);
-	if(m_plog_rwlock->unlock() == -1){
-		bzero(errbuf, KL_COMMON_BUF_SIZE);
-		snprintf(errbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
-			"call unlock failed, err", \
-			__LINE__);
-		perror(errbuf);
-	}
-
-	return res;
-}
-
-int CLog::doWriteLog(const char *buf)
+int CLog::dowritelog(const char *buf)
 {
 	char tbuf[KL_COMMON_BUF_SIZE];
 	char msgbuf[KL_COMMON_BUF_SIZE];
@@ -158,7 +117,7 @@ int CLog::doWriteLog(const char *buf)
 	}
 	
 	//write
-	if(m_plog_file->Write(tbuf, strlen(tbuf)) \
+	if(m_plog_file->write_file(tbuf, strlen(tbuf)) \
 		== -1){
 		//perror("write time to log failed");
 		//kl_perror("write time to log failed, " \
@@ -171,8 +130,8 @@ int CLog::doWriteLog(const char *buf)
 		perror(msgbuf);
 		return -1;
 	}
-	m_plog_file->Write(": ", 2);
-	if(m_plog_file->Write(buf, strlen(buf)) \
+	m_plog_file->write_file(": ", 2);
+	if(m_plog_file->write_file(buf, strlen(buf)) \
 		== -1){
 		//perror("Write logmsg to log failed");
 		//kl_perror("Write logmsg to log failed, " \
@@ -213,7 +172,8 @@ int CLog::getlogtime(char *buf, int size)
 
 const char* CLog::strlevel(LOG_LEVEL level)
 {
-	switch(level){
+	switch(level)
+	{
 	case LOG_LEVEL_ERROR:
 		return "ERROR";
 	case LOG_LEVEL_WARNNING:
@@ -222,6 +182,8 @@ const char* CLog::strlevel(LOG_LEVEL level)
 		return "NOTICE";
 	case LOG_LEVEL_INFO:
 		return "INFO";
+	case LOG_LEVEL_DEBUG:
+		return "DEBUG";
 	}
 	return NULL;
 }

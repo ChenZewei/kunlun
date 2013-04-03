@@ -11,7 +11,7 @@ public:
 	CInetAddr& operator = (const struct sockaddr_in& sockAddr);
 	~CInetAddr();
 
-	int getHostname(char *buf, int size);
+	int get_host_name(char *buf, int size);
 	struct sockaddr* getsockaddr();
 	void setsockaddr(const char *hostname, int port);
 	void setsockaddr(const struct sockaddr_in& sockAddr);

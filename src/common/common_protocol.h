@@ -13,13 +13,10 @@ typedef struct _pkg_header
 #include <stdint.h>
 #include <stdio.h>
 /*
-typedef struct _pkg_message
-{
-	int64_t pkg_len;
-	byte* pkg_ptr;
-	void* sock_stream_ptr;
-}pkg_message, *pkg_message_ptr;
-*/
+ * @description: pkg_len, the length of the actual msg pkg
+                 pkg_ptr, point to the data of message package
+				 msg_stream_ptr, point to the source of message stream
+ */
 class pkg_message
 {
 public:
@@ -37,7 +34,7 @@ public:
 	}
 	int64_t pkg_len;
 	byte* pkg_ptr;
-	void* msg_stream_ptr; //point to the source of message stream
+	void* msg_stream_ptr; 
 };
 
 class CSERIALIZER

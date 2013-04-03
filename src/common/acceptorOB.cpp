@@ -16,6 +16,9 @@ CAcceptorOB::CAcceptorOB(const char *host, int bind_port, \
 	CAcceptor(host, bind_port, backlog, timeout), \
 	m_pmsg_queue_arr(msg_queue_arr_ptr)
 {
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("CAcceptorOB constructor call successfully");
+#endif //_DEBUG
 }
 
 CAcceptorOB::CAcceptorOB(CInetAddr& sockAddr, int backlog, \
@@ -23,11 +26,14 @@ CAcceptorOB::CAcceptorOB(CInetAddr& sockAddr, int backlog, \
 	CAcceptor(sockAddr, backlog, timeout), \
 	m_pmsg_queue_arr(msg_queue_arr_ptr)
 {
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("CAcceptorOB constructor call successfully");
+#endif //_DEBUG
 }
 
 int CAcceptorOB::get_fd() const
 {
-	return getSocket();
+	return getsocket();
 }
 
 void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
@@ -37,7 +43,7 @@ void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 	if(nstatus & EPOLLIN){
 		while(true){
 			psock_stream_ob = new CStreamMsgPacketizer(m_pmsg_queue_arr);
-			res = Accept(psock_stream_ob);
+			res = stream_accept(psock_stream_ob);
 			if(res == -1){	//failed or has no connection
 				delete psock_stream_ob;
 				if(errno == EINTR)

@@ -7,33 +7,35 @@
 
 CThread::CThread() : m_pthread_func(this), m_tid(-1)
 {
-#ifdef _DEBUG
-	printf("init thread obj\n");
-#endif //_DEBUG
 	if(init_pthread_attr(0, true) != 0){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"init thread attribute failed", \
 			__LINE__);
+		return;
 	}
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("CThread constructor call successfully");
+#endif //_DEBUG
 }
 
 CThread::CThread(CThreadFunc *pThreadFunc, const int stack_size, \
 	bool bdetach) : m_pthread_func(pThreadFunc), m_tid(-1)
 {
-#ifdef _DEBUG
-	printf("init thread obj\n");
-#endif //_DEBUG
 	if(init_pthread_attr(stack_size, bdetach) != 0){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"init thread attribute failed", \
 			__LINE__);
+		return;
 	}
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("CThread constructor call successfully");
+#endif //_DEBUG
 }
 
 CThread::~CThread()
 {
 #ifdef _DEBUG
-	printf("delete the thread\n");
+	KL_SYS_DEBUGLOG("CThread destructor call successfully");
 #endif //_DEBUG
 	if(m_pthread_func != NULL){
 		if(m_pthread_func != this)
@@ -51,8 +53,10 @@ void* CThread::thread_entrance(void *pParam)
 	CThreadFunc *pthread_func = pthread->m_pthread_func;
 
 	res = pthread_func->run();
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("thread(id: %d) exit...", pthread->m_tid);
+#endif //_DEBUG
 	delete pthread; //thread resource should be release after exit
-
 	return (void*)res;
 }
 
@@ -71,7 +75,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 
 	if ((result = pthread_attr_init(&m_attr)) != 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call pthread_attr_init failed, " \
 			"err: %s", \
 			__LINE__, strerror(result));
@@ -80,7 +84,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 
 	if ((result = pthread_attr_getstacksize(&m_attr, &old_stack_size)) != 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call pthread_attr_getstacksize failed, err: %s", \
 			__LINE__, strerror(result));
 		return result;
@@ -111,7 +115,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 		if ((result = pthread_attr_setstacksize(&m_attr, \
 			new_stack_size)) != 0)
 		{
-			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"call pthread_attr_setstacksize failed, err: %s", \
 				__LINE__, strerror(result));
 			return result;
@@ -126,7 +130,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 	if ((result = pthread_attr_setdetachstate(&m_attr, \
 		detach_stat)) != 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call pthread_attr_setdetachstate failed, err: %s", \
 			__LINE__, strerror(result));
 		return result;
@@ -134,7 +138,7 @@ int CThread::init_pthread_attr(const int stack_size, \
 
 	if((result = pthread_attr_setscope(&m_attr, \
 		PTHREAD_SCOPE_SYSTEM)) != 0){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"set thread to system level failed, err: %s", \
 			__LINE__, strerror(result));
 		return result;
@@ -148,9 +152,16 @@ int CThread::start()
 	int res;
 	res = pthread_create(&m_tid, &m_attr, thread_entrance, this);
 	if(res != 0){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"create POSIX thread failed, err: %s", \
 			__LINE__, strerror(res));
 	}
 	return res;
+}
+
+int CThread::stop()
+{
+	//avoid to enter into an infinite recursive call
+	if(m_pthread_func != this)
+		m_pthread_func->stop();
 }

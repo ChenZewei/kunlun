@@ -18,7 +18,6 @@ public:
 protected:
 	int initilize();
 protected:
-	bool m_stop_flag;
 	int m_work_thread_count;
 	CBaseServerConf m_base_server_conf;
 	//a msg recv thread and m_work_thread_count work threads

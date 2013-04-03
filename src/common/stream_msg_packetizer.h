@@ -15,10 +15,10 @@ public:
 	CStreamMsgPacketizer(int sock, CMsgQueueArr *msg_queue_arr_ptr);
 	~CStreamMsgPacketizer();
 	/*
-	 * @description: work function receive data when epoll notify it that the buffer of 
-	                 the sock stream has data and it pack the data to a intact msg pkg
-					 and push the msg pkg to a msg queue chosen from all msg queues.
-					 a msg queue is chosen through the mode of round robin.
+	 * @description: work function receive data when socknotifier notify that the buffer of 
+	                 the sock stream has data to receive and it pack the data to a intact msg 
+					 pkg and push the msg pkg to a msg queue chosen from all msg queues.
+					 the msg queue is chosen through the mode of round robin.
 					 if a sock stream is closed by the peer side, work function must detach
 					 the sock stream object with epoll engine and delete the sock stream object
 	 */

@@ -51,7 +51,7 @@ int CInetAddr::getport()
 	return ntohl(m_sockaddr.sin_port);
 }
 
-int CInetAddr::getHostname(char *buf, int size)
+int CInetAddr::get_host_name(char *buf, int size)
 {
 	int nlen;
 	struct hostent *phostent;

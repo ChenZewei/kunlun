@@ -66,7 +66,7 @@ public:
 
 	/*
 	 * @description: getmsgqueuebyrobin choose and return a msg queue 
-					 in msg queue array though the mode of roud robin
+					 in msg queue array though the mode of round robin
 	 */
 	CMsgQueue* getmsgqueuebyrobin()
 	{

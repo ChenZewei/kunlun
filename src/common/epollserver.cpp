@@ -62,7 +62,7 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 	psock_stream = (CSockStream *)(pkg_msg_ptr->msg_stream_ptr);
 	if(psock_stream == NULL)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"message has null sock stream, message is illegal", \
 			__LINE__);
 		return -1;
@@ -79,7 +79,7 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 	if((res = psock_stream->stream_send(&msg_resp_header, \
 		sizeof(base_msg_header))) <= 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"send responsed msg header failed", \
 			__LINE__);
 		return res;
@@ -87,7 +87,7 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 
 	if((res = psock_stream->stream_send(body, strlen(body))) <= 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"send responsed msg body failed", \
 			__LINE__);
 	}
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 
 	base_server_conf.bind_host = NULL;
 	base_server_conf.nbind_prot = nbind_port;
-	base_server_conf.nlog_level = 2;
+	base_server_conf.nlog_level = 4; //DEBUG level
 	base_server_conf.nthread_stack_size = 1 * 1024 * 1024;
 	base_server_conf.ntimeout = 5;
 	base_server_conf.nwork_thread_count = 10;
@@ -132,6 +132,7 @@ int main(int argc, char *argv[])
 		return ENOMEM;
 	}
 	pbase_server->run();
-	printf("epollserver exit...\n");
+	KL_SYS_NOTICELOG("epollserver exit...");
+	delete pbase_server;
 	return 0;
 }

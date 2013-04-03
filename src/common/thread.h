@@ -5,15 +5,16 @@
 #include "thread_func.h"
 
 typedef pthread_t kl_thread_t;
-
-//the obj of CThread must be created on heap
-//and the obj can't be release by call delete
+/*
+ * @description: the obj of CThread must be created on heap
+                 and the obj can't be release by call delete
+ */
 class CThread : public CThreadFunc
 {
 public:
 	CThread();
 	/*
-	 * @param: pThreadFunc, point at a obj must create by new
+	 * @param: pThreadFunc, point at a obj must create on heap
 	 * @param: stack_size, the size of thread's stack, set default value by use 0
 	 * @param: bdetach, whether set detach state
 	 */
@@ -21,8 +22,18 @@ public:
 	virtual ~CThread();
 	//start thread
 	int start();
+	/*
+	 * @description: stop  the thread safely if thread blocked in a infinite loop, but if 
+	                 thread blocked with I/O event, stop function can't drive thread to
+					 unblock
+	 */
+	int stop();
 	kl_thread_t get_thread_id(); 
 private:
+	//forbid the thread obj being copied
+	CThread(const CThread&);
+	CThread& operator=(const CThread&);
+
 	static void* thread_entrance(void *pParam);
 	int init_pthread_attr(const int stack_size, bool bdetach);
 

@@ -31,19 +31,19 @@ int CSock::open(int domain, int type)
 {
 	m_fd = socket(domain, type, 0);
 	if(m_fd == -1){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"create socket failed, err: %s", \
 			__LINE__, strerror(errno));
 	}
 	return m_fd;
 }
 
-int CSock::getSocket() const
+int CSock::getsocket() const
 {
 	return m_fd;
 }
 
-int CSock::getLocalAddr(CInetAddr *paddr)
+int CSock::getlocaladdr(CInetAddr *paddr)
 {
 	struct sockaddr_in sockAddr;
 	socklen_t nlen = sizeof(sockAddr);
@@ -53,7 +53,7 @@ int CSock::getLocalAddr(CInetAddr *paddr)
 
 	if(getsockname(m_fd, (struct sockaddr*)&sockAddr, \
 		&nlen) == -1){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"get local address failed, err: %s", \
 			__LINE__, strerror(errno));
 		return -1;
@@ -63,7 +63,7 @@ int CSock::getLocalAddr(CInetAddr *paddr)
 	return 0;
 }
 
-int CSock::getPeerAddr(CInetAddr *paddr)
+int CSock::getpeeraddr(CInetAddr *paddr)
 {
 	struct sockaddr_in sockAddr;
 	socklen_t nlen = sizeof(sockAddr);
@@ -73,7 +73,7 @@ int CSock::getPeerAddr(CInetAddr *paddr)
 
 	if(getpeername(m_fd, (struct sockaddr*)&sockAddr, \
 		&nlen) == -1){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"get peer address failed, err: %s", \
 			__LINE__, strerror(errno));
 		return -1;

@@ -1,12 +1,8 @@
-.SUFFIXES: .cpp .o
-OBJECTS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epoll_engine.o epollclient.o \
+#.SUFFIXES: .cpp .o
+ALL_OBJS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epoll_engine.o epollclient.o \
 	epollserver.o event.o file.o file_test.o inetaddr.o log.o log_test.o msg_looper.o msg_parser.o \
 	msg_queue.o mutex.o rwlock.o sock.o socknotifier.o sockobserver.o sockstream.o sockstreamOB.o \
 	stream_msg_packetizer.o thread.o thread_msg_recv.o thread_test.o
-HEADERS = ./*.h
-FILE_TEST_OBJS = file_test.o file.o 
-LOG_TEST_OBJS = log_test.o log.o lock.o file.o
-THREAD_TEST_OBJS = thread_test.o thread.o log.o lock.o file.o global.o
 EPOLLSERVER_OBJS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epoll_engine.o epollserver.o \
 	event.o file.o inetaddr.o log.o msg_looper.o msg_parser.o msg_queue.o mutex.o rwlock.o sock.o \
 	socknotifier.o sockobserver.o sockstream.o sockstreamOB.o stream_msg_packetizer.o thread.o thread_msg_recv.o
@@ -33,4 +29,4 @@ epollclient : $(EPOLLCLIENT_OBJS)
 
 .PHONY : clean
 clean : 
-	-rm -rf $(OBJECTS)
+	-rm -rf $(ALL_OBJS)

@@ -25,6 +25,7 @@ public:
 	~CThreadMsgRecv();
 
 	int run();
+	int stop();
 private:
 	CAcceptorOB *m_pacceptor_ob;
 #ifdef USE_SELECT

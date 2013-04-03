@@ -28,7 +28,7 @@ CThreadMsgRecv::CThreadMsgRecv(CAcceptorOB *pacceptor_ob) : \
 	m_pepoll_engine = new CEpollEngine();
 	if(m_pepoll_engine == NULL)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"no more memory for server to create epoll engine object", \
 			__LINE__);
 		return;
@@ -63,7 +63,7 @@ int CThreadMsgRecv::run()
 {
 	int res;
 #ifdef _DEBUG
-	assert(m_pacceptor_ob);
+	assert(m_pacceptor_ob && m_pepoll_engine);
 #endif //_DEBUG
 #ifdef USE_SELECT
 
@@ -78,4 +78,20 @@ int CThreadMsgRecv::run()
 #endif //USE_POLL
 #endif //USE_SELECT
 	return res;
+}
+
+int CThreadMsgRecv::stop()
+{
+#ifdef _DEBUG
+	assert(m_pepoll_engine);
+#endif //_DEBUG
+#ifdef USE_SELECT
+
+#else
+#ifdef USE_POLL
+
+#else //default : USE_EPOLL
+	return m_pepoll_engine->stop();
+#endif //USE_POLL
+#endif //USE_SELECT
 }

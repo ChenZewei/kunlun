@@ -44,6 +44,9 @@ CBaseServer::~CBaseServer()
 		delete m_pmsg_parser;
 		m_pmsg_parser = NULL;
 	}
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("CBaseServer destructor call successfully");
+#endif //_DEBUG
 }
 
 int CBaseServer::initilize()
@@ -74,7 +77,7 @@ int CBaseServer::initilize()
 	m_pmsg_queue_arr = new CMsgQueueArr(m_work_thread_count);
 	if(m_pmsg_queue_arr == NULL)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"no more memory for server to create msg queue array", \
 			__LINE__);
 		return ENOMEM;
@@ -83,7 +86,7 @@ int CBaseServer::initilize()
 	m_ppthread = new CThreadPtr[m_work_thread_count + 1];
 	if(m_ppthread == NULL)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"no more memory for server to create thread array", \
 			__LINE__);
 		return ENOMEM;
@@ -94,7 +97,7 @@ int CBaseServer::initilize()
 		m_pmsg_queue_arr);
 	if(pacceptor_ob == NULL)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"no more memory for server to create acceptor object", \
 			__LINE__);
 		return ENOMEM;
@@ -105,7 +108,7 @@ int CBaseServer::initilize()
 	pthread_msg_recv = new CThreadMsgRecv(pacceptor_ob);
 	if(pthread_msg_recv == NULL)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"no more memory for server to create msg recv thread func object", \
 			__LINE__);
 		return ENOMEM;
@@ -114,7 +117,7 @@ int CBaseServer::initilize()
 		m_base_server_conf.nthread_stack_size, true);
 	if(m_ppthread[0] == NULL)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"no more memory for server to create thread object", \
 			__LINE__);
 		return ENOMEM;
@@ -127,7 +130,7 @@ int CBaseServer::initilize()
 		pmsg_looper = new CMsgLooper(m_pmsg_queue_arr->getmsgqueuebyrobin(), m_pmsg_parser);
 		if(pmsg_looper == NULL)
 		{
-			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"no more memory for server to create msg looper", \
 				__LINE__);
 			return ENOMEM;
@@ -136,12 +139,15 @@ int CBaseServer::initilize()
 			m_base_server_conf.nthread_stack_size, true);
 		if(m_ppthread[nwork_thread_curr] == NULL)
 		{
-			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"no more memory for server to create msg work thread", \
 				__LINE__);
 			return ENOMEM;
 		}
 	}
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("CBaseServer::initilize function call successfully");
+#endif //_DEBUG
 	return 0;
 }
 
@@ -155,13 +161,13 @@ int CBaseServer::run()
 	{
 		if((res = m_ppthread[nthread_curr]->start()) != 0)
 		{
-			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"start to run thread[%d] failed, err: %s", \
 				__LINE__, nthread_curr, strerror(res));
 			return -1;
 		}
 	}
-	KL_SYS_NOTICELOG("server has been started");
+	KL_SYS_NOTICELOG("kunlun(common) base server stop to run");
 	
 	while(true)
 	{
@@ -170,11 +176,19 @@ int CBaseServer::run()
 		 */
 		select(0, NULL, NULL, NULL, NULL);
 	}
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("kunlun(common) base server stop to run");
+#endif //_DEBUG
 	return 0;
 }
 
 int CBaseServer::stop()
 {
-	m_stop_flag = true;
+	int nthread_curr;
+	for(nthread_curr = 0; nthread_curr < m_work_thread_count + 1; \
+		nthread_curr++)
+	{
+		m_ppthread[nthread_curr]->stop();
+	}
 	return 0;
 }

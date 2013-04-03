@@ -15,9 +15,11 @@ public:
 	~CMsgLooper();
 
 	virtual int run();
+	virtual int stop();
 private:
 	CMsgQueue *m_pmsg_queue;
 	CMsgParser *m_pmsg_parser;
+	bool m_stop_flag;
 };
 
 #endif //KL_COMMON_MSG_LOOPER_H_

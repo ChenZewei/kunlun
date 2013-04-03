@@ -14,7 +14,6 @@ CMutex::CMutex()
 	int res;
 
 	if((res = pthread_mutexattr_init(&mat)) != 0){
-		//kl_errout("pthread_mutexattr_init failed");
 		bzero(msgbuf, KL_COMMON_BUF_SIZE);
 		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
 			"file: "__FILE__", line: %d, " \
@@ -36,7 +35,6 @@ CMutex::CMutex()
 	}
 
 	if((res = pthread_mutex_init(&m_mutex, &mat)) != 0){
-		//kl_errout("pthread_mutex_init failed");
 		bzero(msgbuf, KL_COMMON_BUF_SIZE);
 		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
 			"file: "__FILE__", line: %d, "\

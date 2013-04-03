@@ -20,7 +20,7 @@ public:
 	CAcceptor(const char *host, int bind_port, int backlog, int timeout);
 	CAcceptor(CInetAddr& sockAddr, int backlog, int timeout);
 
-	int Accept(CSockStream *pSockStream);
+	int stream_accept(CSockStream *pSockStream);
 protected:
 	int setserveropt(int timeout);
 	int setkeepalive(int idleSeconds);

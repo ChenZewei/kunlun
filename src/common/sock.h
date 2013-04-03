@@ -5,9 +5,9 @@ class CSock
 {
 public:
 	int open(int domain, int type);
-	int getSocket() const;
-	int getLocalAddr(CInetAddr *pAddr);
-	int getPeerAddr(CInetAddr *pAddr);
+	int getsocket() const;
+	int getlocaladdr(CInetAddr *pAddr);
+	int getpeeraddr(CInetAddr *pAddr);
 	void setnonblocking();
 	virtual ~CSock();
 protected:

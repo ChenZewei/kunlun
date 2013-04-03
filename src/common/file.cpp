@@ -50,10 +50,10 @@ CFile::CFile(const char *path, int flags, mode_t mode)
 
 CFile::~CFile()
 {
-	Close();
+	close_file();
 }
 
-void CFile::Close()
+void CFile::close_file()
 {
 	if(m_fd != -1){
 		close(m_fd);
@@ -108,7 +108,7 @@ int CFile::get_file_info(struct stat *buf)
 	return 0;
 }
 
-int CFile::Read(void *buf, size_t count)
+int CFile::read_file(void *buf, size_t count)
 {
 	char *p;
 	p = static_cast<char*>(buf);
@@ -133,7 +133,7 @@ int CFile::Read(void *buf, size_t count)
 	return count - nleft;
 }
 
-int CFile::Write(const void *buf, size_t count)
+int CFile::write_file(const void *buf, size_t count)
 {
 	const char *p;
 	p = static_cast<const char*>(buf);
@@ -161,7 +161,7 @@ int CFile::Write(const void *buf, size_t count)
 	return count - nleft;
 }
 
-int CFile::Lseek(off_t offset, int whence)
+int CFile::lseek(off_t offset, int whence)
 {
 	int res;
 	res = lseek(m_fd, offset, whence);
@@ -169,7 +169,7 @@ int CFile::Lseek(off_t offset, int whence)
 	return res;
 }
 
-int CFile::Unlink(const char *path)
+int CFile::unlink_file(const char *path)
 {
 	int res;
 	res =  unlink(path);

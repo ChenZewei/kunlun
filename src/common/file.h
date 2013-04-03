@@ -19,11 +19,11 @@ public:
 	virtual int Open(const char *path, int flags);
 	virtual int Open(const char *path, int flags, mode_t mode);
 	virtual int create_file(const char *path, mode_t mode);
-	virtual int Unlink(const char *path);
-	virtual int Lseek(off_t offset, int whence);
-	virtual int Write(const void *buf, size_t count);
-	virtual int Read(void *buf, size_t count);
-	virtual void Close();
+	virtual int unlink_file(const char *path);
+	virtual int lseek(off_t offset, int whence);
+	virtual int write_file(const void *buf, size_t count);
+	virtual int read_file(void *buf, size_t count);
+	virtual void close_file();
 
 	int get_file_info(struct stat *buf);
 	int get_error_code();

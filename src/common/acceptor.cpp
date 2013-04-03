@@ -19,14 +19,14 @@ CAcceptor::CAcceptor(const char *host, int bind_port, \
 	if (setsockopt(m_fd, SOL_SOCKET, \
 		SO_REUSEADDR, &res, sizeof(int)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"set SO_REUSEADDR failed, err: %s", \
 			__LINE__, strerror(errno));
 	}
 
 	if(bind(m_fd, sockAddr.getsockaddr(), \
 		sizeof(struct sockaddr)) == -1){
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call bind failed, err: %s", \
 			__LINE__, strerror(errno));
 	}
@@ -36,6 +36,9 @@ CAcceptor::CAcceptor(const char *host, int bind_port, \
 		setserveropt(timeout);
 
 	setnonblocking();
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("CAcceptor constructor call successfully");
+#endif //_DEBUG
 }
 
 CAcceptor::CAcceptor(CInetAddr& sockAddr, 
@@ -45,14 +48,14 @@ CAcceptor::CAcceptor(CInetAddr& sockAddr,
 	if (setsockopt(m_fd, SOL_SOCKET, \
 		SO_REUSEADDR, &res, sizeof(int)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"set SO_REUSEADDR failed, err: %s", \
 			__LINE__, strerror(errno));
 	}
 
 	if(bind(m_fd, sockAddr.getsockaddr(), \
 		sizeof(struct sockaddr)) == -1){
-			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"call bind failed, err: %s", \
 				__LINE__, strerror(errno));
 	}
@@ -62,9 +65,12 @@ CAcceptor::CAcceptor(CInetAddr& sockAddr,
 		setserveropt(timeout);
 
 	setnonblocking();
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("CAcceptor constructor call successfully");
+#endif //_DEBUG
 }
 
-int CAcceptor::Accept(CSockStream *pSockStream)
+int CAcceptor::stream_accept(CSockStream *pSockStream)
 {
 	int connfd;
 	struct sockaddr sockAddr;
@@ -91,7 +97,7 @@ int CAcceptor::setserveropt(int timeout)
 	if (setsockopt(m_fd, SOL_SOCKET, SO_LINGER, \
                 &linger, (socklen_t)sizeof(struct linger)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \
 			__LINE__, strerror(errno));
 		return errno != 0 ? errno : ENOMEM;
@@ -103,7 +109,7 @@ int CAcceptor::setserveropt(int timeout)
 	if (setsockopt(m_fd, SOL_SOCKET, SO_SNDTIMEO, \
 		&waittime, (socklen_t)sizeof(struct timeval)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \
 			__LINE__, strerror(errno));
 		return errno != 0 ? errno : ENOMEM;
@@ -112,7 +118,7 @@ int CAcceptor::setserveropt(int timeout)
 	if (setsockopt(m_fd, SOL_SOCKET, SO_RCVTIMEO, \
                &waittime, (socklen_t)sizeof(struct timeval)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \
 			__LINE__, strerror(errno));
 		return errno != 0 ? errno : ENOMEM;
@@ -122,7 +128,7 @@ int CAcceptor::setserveropt(int timeout)
 	if (setsockopt(m_fd, IPPROTO_TCP, TCP_NODELAY, \
 		(char *)&flags, sizeof(flags)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \
 			__LINE__, strerror(errno));
 		return errno != 0 ? errno : EINVAL;
@@ -150,7 +156,7 @@ int CAcceptor::setkeepalive(int idleSeconds)
 	if(setsockopt(m_fd, SOL_SOCKET, SO_KEEPALIVE, \
 		(char *)&keepAlive, sizeof(keepAlive)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \
 			__LINE__, strerror(errno));
 		return errno != 0 ? errno : EINVAL;
@@ -161,7 +167,7 @@ int CAcceptor::setkeepalive(int idleSeconds)
 	if (setsockopt(m_fd, SOL_TCP, TCP_KEEPIDLE, (char *)&keepIdle, \
 		sizeof(keepIdle)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \
 			__LINE__, strerror(errno));
 		return errno != 0 ? errno : EINVAL;
@@ -171,7 +177,7 @@ int CAcceptor::setkeepalive(int idleSeconds)
 	if (setsockopt(m_fd, SOL_TCP, TCP_KEEPINTVL, (char *)&keepInterval, \
 		sizeof(keepInterval)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \
 			__LINE__, strerror(errno));
 		return errno != 0 ? errno : EINVAL;
@@ -181,7 +187,7 @@ int CAcceptor::setkeepalive(int idleSeconds)
 	if (setsockopt(m_fd, SOL_TCP, TCP_KEEPCNT, (char *)&keepCount, \
 		sizeof(keepCount)) < 0)
 	{
-		KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \
 			__LINE__, strerror(errno));
 		return errno != 0 ? errno : EINVAL;

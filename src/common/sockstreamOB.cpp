@@ -24,7 +24,7 @@ CSockStreamOB::~CSockStreamOB()
 
 int CSockStreamOB::get_fd() const
 {
-	return getSocket();
+	return getsocket();
 }
 
 void CSockStreamOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)

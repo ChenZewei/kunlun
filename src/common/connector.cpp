@@ -16,7 +16,7 @@ CConnector::CConnector(const char *host, int port, int bport /*= -1*/) : \
 		if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, \
 			&res, sizeof(int)) < 0)
 		{
-			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"set SO_REUSEADDR failed, err: %s", \
 				__LINE__, strerror(errno));
 		}
@@ -34,7 +34,7 @@ CConnector::CConnector(const CInetAddr& serverAddr, int bport /*= -1*/) : \
 		if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, \
 			&res, sizeof(int)) < 0)
 		{
-			KL_SYS_ERRLOG("file: "__FILE__", line: %d, " \
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"set SO_REUSEADDR failed, err: %s", \
 				__LINE__, strerror(errno));
 		}
@@ -56,7 +56,7 @@ CConnector::~CConnector()
 		m_fd = -1;
 }
 
-int CConnector::Connect(CSockStream *pSockStream)
+int CConnector::stream_connect(CSockStream *pSockStream)
 {
 	if(m_fd == -1)
 		return -1;

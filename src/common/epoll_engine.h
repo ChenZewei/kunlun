@@ -18,7 +18,7 @@ public:
     int detach(CSockObserver *pObserver);
 	int notify();
 	int set_ob_status(CSockObserver *psock_observer, uint32_t nstatus);
-	void stop();
+	int stop();
 private:
 	//create a epoll fd
 	int open(int size);
