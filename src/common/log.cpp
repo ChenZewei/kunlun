@@ -1,49 +1,39 @@
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include "rwlock.h"
 #include "file.h"
 #include "log.h"
-#include "common_types.h"
 
 CLog *g_psys_log = NULL;
 
 CLog::CLog(const char *path, LOG_LEVEL level)
 {
-	char msgbuf[KL_COMMON_BUF_SIZE];
-
 	m_plog_file = new CFile(path, O_RDWR | O_CREAT | O_APPEND, \
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if(m_plog_file == NULL){
-		//perror("open(or create) log file failed");
-		/*kl_perror("open log file failed, " \
-			"err: %s\n", strerror(errno));*/
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, "\
-			"open log file failed, err", \
-			__LINE__);
-		perror(msgbuf);
+		printf("file: "__FILE__", line: %d, "\
+			"open log file failed, err: %s\n", \
+			__LINE__, strerror(ENOMEM));
+		return;
 	}
 
 	m_level = level;
-
 	m_plog_rwlock = new CRWLock();
 	if(m_plog_rwlock == NULL){
-		/*kl_perror("create log lock failed, " \
-			"err: %s\n", strerror(errno));*/
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, "\
-			"create log lock failed, err", \
-			__LINE__);
-		perror(msgbuf);
+		printf("file: "__FILE__", line: %d, "\
+			"create log lock failed, err: %s\n", \
+			__LINE__, strerror(ENOMEM));
+		return;
 	}
+#ifdef _DEBUG
+	printf("call CLog constructor successfully\n");
+#endif //_DEBUG
 }
 
 CLog::~CLog()
@@ -57,6 +47,9 @@ CLog::~CLog()
 		delete m_plog_rwlock;
 		m_plog_rwlock = NULL;
 	}
+#ifdef _DEBUG
+	printf("call CLog destructor successfully\n");
+#endif
 }
 
 int CLog::writelog(LOG_LEVEL level, const char *format, ...)
@@ -64,7 +57,6 @@ int CLog::writelog(LOG_LEVEL level, const char *format, ...)
 	va_list ap;
 	char msgbuf[KL_COMMON_LOG_BUF_SIZE];
 	char buf[KL_COMMON_LOG_BUF_SIZE];
-	char errbuf[KL_COMMON_BUF_SIZE];
 	int res;
 
 	if(level > m_level){
@@ -79,21 +71,17 @@ int CLog::writelog(LOG_LEVEL level, const char *format, ...)
 		strlevel(level), msgbuf);
 
 	if(m_plog_rwlock->wrlock() == -1){
-		bzero(errbuf, KL_COMMON_BUF_SIZE);
-		snprintf(errbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
-			"call wrlock failed, err", \
-			__LINE__);
-		perror(errbuf);
+		printf("file: "__FILE__", line: %d, " \
+			"call wrlock failed, err: %s\n", \
+			__LINE__, strerror(errno));
+		return -1;
 	}
 	res = dowritelog(buf);
 	if(m_plog_rwlock->unlock() == -1){
-		bzero(errbuf, KL_COMMON_BUF_SIZE);
-		snprintf(errbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
-			"call unlock failed, err", \
-			__LINE__);
-		perror(errbuf);
+		printf("file: "__FILE__", line: %d, " \
+			"call unlock failed, err: %s\n", \
+			__LINE__, strerror(errno));
+		return -1;
 	}
 
 	return res;
@@ -101,18 +89,12 @@ int CLog::writelog(LOG_LEVEL level, const char *format, ...)
 
 int CLog::dowritelog(const char *buf)
 {
-	char tbuf[KL_COMMON_BUF_SIZE];
-	char msgbuf[KL_COMMON_BUF_SIZE];
+	char tbuf[32];
 
-	if(getlogtime(tbuf, KL_COMMON_BUF_SIZE) == -1){
-		//printf("get local time failed\n");
-		//kl_perror("get local time failed\n");
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, "\
-			"get local time failed, err", \
-			__LINE__);
-		perror(msgbuf);
+	if(getlogtime(tbuf, sizeof(tbuf)) == -1){
+		printf("file: "__FILE__", line: %d, "\
+			"get local time failed, err: %s\n", \
+			__LINE__, strerror(errno));
 		return -1;
 	}
 	
@@ -122,12 +104,9 @@ int CLog::dowritelog(const char *buf)
 		//perror("write time to log failed");
 		//kl_perror("write time to log failed, " \
 		//	"err: %s\n", strerror(errno));
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, "\
-			"write time to log failed, err", \
-			__LINE__);
-		perror(msgbuf);
+		printf("file: "__FILE__", line: %d, "\
+			"write time to log failed, err: %s\n", \
+			__LINE__, strerror(errno));
 		return -1;
 	}
 	m_plog_file->write_file(": ", 2);
@@ -136,12 +115,9 @@ int CLog::dowritelog(const char *buf)
 		//perror("Write logmsg to log failed");
 		//kl_perror("Write logmsg to log failed, " \
 		//		"err: %s\n", strerror(errno));
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, "\
-			"write logmsg to log failed, err", \
-			__LINE__);
-		perror(msgbuf);
+		printf("file: "__FILE__", line: %d, "\
+			"write logmsg to log failed, err: %s\n", \
+			__LINE__, strerror(errno));
 		return -1;
 	}
 	return 0;

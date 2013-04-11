@@ -55,46 +55,58 @@ int CBaseMsgParser::parse_msg(pkg_message* pkg_msg_ptr)
 int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 {
 	int res;
-	char body[KL_COMMON_BUF_SIZE];
+	char resp_body[KL_COMMON_BUF_SIZE];
 	CSockStream *psock_stream;
 	base_msg_header msg_resp_header;
 
-	psock_stream = (CSockStream *)(pkg_msg_ptr->msg_stream_ptr);
+	psock_stream = new CSockStream(pkg_msg_ptr->sock_stream_fd, false);
 	if(psock_stream == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
-			"message has null sock stream, message is illegal", \
+			"no more memory to create sock stream obj", \
 			__LINE__);
-		return -1;
+		res = -1;
+		goto error_handle;
 	}
 	printf("msg_test1_callback(thread: %ld) data : %s, and server(thread: %ld) response\n", \
 		gettid(), (char*)(pkg_msg_ptr->pkg_ptr + 2), gettid());
 
 	msg_resp_header.cmd = KL_COMMON_PROTOCOL_MSG_SERVER_RESP;
 	msg_resp_header.status = 0;
-	snprintf(body, KL_COMMON_BUF_SIZE, \
+	snprintf(resp_body, KL_COMMON_BUF_SIZE, \
 		"msg_test1_callback(thread: %ld) response the request", \
 		gettid());
-	CSERIALIZER::long2buff(strlen(body), msg_resp_header.pkg_len);
+	CSERIALIZER::long2buff(strlen(resp_body), msg_resp_header.pkg_len);
 	if((res = psock_stream->stream_send(&msg_resp_header, \
 		sizeof(base_msg_header))) <= 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
-			"send responsed msg header failed", \
-			__LINE__);
-		return res;
+			"send responsed msg header failed, err: %s", \
+			__LINE__, strerror(errno));
+		res = -1;
+		goto error_handle;
 	}
 
-	if((res = psock_stream->stream_send(body, strlen(body))) <= 0)
+	if((res = psock_stream->stream_send(resp_body, strlen(resp_body))) <= 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
-			"send responsed msg body failed", \
-			__LINE__);
+			"send responsed msg body failed, err: %s", \
+			__LINE__, strerror(errno));
+		res = -1;
+		goto error_handle;
 	}
-	//success to consume a msg, so delete the msg pkg
+	res = 0;
+error_handle:
+	//consume a msg, so delete the msg pkg
 	delete pkg_msg_ptr;
 	pkg_msg_ptr = NULL;
-	return 0;
+
+	if(psock_stream != NULL)
+	{
+		delete psock_stream;
+		psock_stream = NULL;
+	}
+	return res;
 }
 
 int main(int argc, char *argv[])
@@ -113,7 +125,7 @@ int main(int argc, char *argv[])
 	}
 
 	base_server_conf.bind_host = NULL;
-	base_server_conf.nbind_prot = nbind_port;
+	base_server_conf.nbind_port = nbind_port;
 	base_server_conf.nlog_level = 4; //DEBUG level
 	base_server_conf.nthread_stack_size = 1 * 1024 * 1024;
 	base_server_conf.ntimeout = 5;
@@ -131,6 +143,10 @@ int main(int argc, char *argv[])
 			__LINE__);
 		return ENOMEM;
 	}
+	KL_SYS_NOTICELOG("kunlun(common test) base server has been started, " \
+					 "and listen on port: %d. All copyrights are reserved " \
+					 "by Leslie Wei.  Connect with me by e-mail: leslieyuchen@gmail.com", \
+					 base_server_conf.nbind_port);
 	pbase_server->run();
 	KL_SYS_NOTICELOG("epollserver exit...");
 	delete pbase_server;

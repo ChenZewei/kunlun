@@ -1,7 +1,13 @@
 #ifndef KL_COMMON_TYPES_H_
 #define KL_COMMON_TYPES_H_
 
-#define KL_COMMON_BUF_SIZE		256
+/*
+ * @description: set buf size to 4096 just because the size is similar to
+                 the size of unix kernel's buffer, even though set buf to 
+				 more size, the efficiency of copy isn't promoted
+ */
+#define KL_COMMON_BUF_SIZE		4096 
+#define KL_COMMON_IP_ADDR_LEN	16	//IPv4
 #define KL_COMMON_EXIT_ERR		-1	//system exit with error
 #define KL_COMMON_EXIT_SYS		0	//system exit without error
 

@@ -59,7 +59,7 @@ public:
 
 		if(m_ppmsg_queue != NULL)
 		{
-			delete m_ppmsg_queue;
+			delete [] m_ppmsg_queue;
 			m_ppmsg_queue = NULL;
 		}
 	}

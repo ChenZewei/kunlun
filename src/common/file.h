@@ -16,11 +16,11 @@ public:
 	CFile(const char *path, int flags, mode_t mode);
 	virtual ~CFile();
 
-	virtual int Open(const char *path, int flags);
-	virtual int Open(const char *path, int flags, mode_t mode);
+	virtual int open_file(const char *path, int flags);
+	virtual int open_file(const char *path, int flags, mode_t mode);
 	virtual int create_file(const char *path, mode_t mode);
 	virtual int unlink_file(const char *path);
-	virtual int lseek(off_t offset, int whence);
+	virtual int lseek_file(off_t offset, int whence);
 	virtual int write_file(const void *buf, size_t count);
 	virtual int read_file(void *buf, size_t count);
 	virtual void close_file();

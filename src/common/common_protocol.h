@@ -15,13 +15,13 @@ typedef struct _pkg_header
 /*
  * @description: pkg_len, the length of the actual msg pkg
                  pkg_ptr, point to the data of message package
-				 msg_stream_ptr, point to the source of message stream
+				 sock_stream_fd, sign the source of message stream
  */
 class pkg_message
 {
 public:
 	pkg_message() : pkg_len(0), \
-		pkg_ptr(NULL), msg_stream_ptr(NULL)
+		pkg_ptr(NULL), sock_stream_fd(-1)
 	{
 	}
 	~pkg_message()
@@ -34,7 +34,7 @@ public:
 	}
 	int64_t pkg_len;
 	byte* pkg_ptr;
-	void* msg_stream_ptr; 
+	int sock_stream_fd; 
 };
 
 class CSERIALIZER

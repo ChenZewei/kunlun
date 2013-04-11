@@ -133,7 +133,7 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 						__LINE__, m_pkg_header.cmd, m_pmsg_queue_arr->m_queue_robin);
 #endif //_DEBUG
 					pkg_message *pkg_msg_ptr = new pkg_message();
-					pkg_msg_ptr->msg_stream_ptr = (void*)this;
+					pkg_msg_ptr->sock_stream_fd = m_fd;
 					pkg_msg_ptr->pkg_len = nbytes_body + 2;
 					pkg_msg_ptr->pkg_ptr = m_pbody;
 					(m_pmsg_queue_arr->getmsgqueuebyrobin())->push_msg(pkg_msg_ptr);

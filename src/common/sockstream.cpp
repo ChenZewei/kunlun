@@ -6,13 +6,29 @@
 #include <errno.h>
 #include "sockstream.h"
 
-CSockStream::CSockStream() : CSock()
+CSockStream::CSockStream() : CSock(), m_bclosed(true)
 {
 }
 
-CSockStream::CSockStream(int sock)
+CSockStream::CSockStream(int sock) : m_bclosed(true)
 {
 	setsockstream(sock);
+}
+
+CSockStream::CSockStream(int sock, bool bclosed) : \
+	m_bclosed(bclosed)
+{
+	setsockstream(sock);
+}
+
+CSockStream::~CSockStream()
+{
+	/*
+	 * set m_fd to -1, just to avoid closing the socket when we call
+	   CSock destructor
+	 */
+	if(!m_bclosed)
+		m_fd = -1;
 }
 
 void CSockStream::setsockstream(int sock)

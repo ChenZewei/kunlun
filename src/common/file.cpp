@@ -1,14 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <strings.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include "file.h"
-#include "common_types.h"
 
 CFile::CFile()
 {
@@ -18,34 +16,32 @@ CFile::CFile()
 
 CFile::CFile(const char *path, int flags)
 {
-	char msgbuf[KL_COMMON_BUF_SIZE];
-
 	m_fd = -1;
 	m_errno = 0;
-	if(Open(path, flags) == -1){
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
-			"open file: %s failed, err", \
-			__LINE__, path);
-		perror(msgbuf);
+	if(open_file(path, flags) == -1){
+		printf("file: "__FILE__", line: %d, " \
+			"open file(path: %s) failed, err: %s\n", \
+			__LINE__, path, strerror(errno));
+		return;
 	}
+#ifdef _DEBUG
+	printf("call CFile constructor successfully\n");
+#endif //_DEBUG
 }
 
 CFile::CFile(const char *path, int flags, mode_t mode)
 {
-	char msgbuf[KL_COMMON_BUF_SIZE];
-
 	m_fd = -1;
 	m_errno = 0;
-	if(Open(path, flags, mode) == -1){
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
-			"open file: %s failed, err", \
-			__LINE__, path);
-		perror(msgbuf);
+	if(open_file(path, flags, mode) == -1){
+		printf("file: "__FILE__", line: %d, " \
+			"open file(path: %s) failed, err: %s\n", \
+			__LINE__, path, strerror(errno));
+		return;
 	}
+#ifdef _DEBUG
+	printf("call CFile constructor successfully\n");
+#endif //_DEBUG
 }
 
 CFile::~CFile()
@@ -60,7 +56,7 @@ void CFile::close_file()
 	}
 }
 
-int CFile::Open(const char *path, int flags)
+int CFile::open_file(const char *path, int flags)
 {
 	m_fd = open(path, flags);
 	if(m_fd == -1){
@@ -71,7 +67,7 @@ int CFile::Open(const char *path, int flags)
 	return 0;
 }
 
-int CFile::Open(const char *path, int flags, mode_t mode)
+int CFile::open_file(const char *path, int flags, mode_t mode)
 {
 	m_fd = open(path, flags, mode);
 	if(m_fd == -1){
@@ -161,7 +157,7 @@ int CFile::write_file(const void *buf, size_t count)
 	return count - nleft;
 }
 
-int CFile::lseek(off_t offset, int whence)
+int CFile::lseek_file(off_t offset, int whence)
 {
 	int res;
 	res = lseek(m_fd, offset, whence);

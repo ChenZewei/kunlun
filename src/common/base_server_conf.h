@@ -8,7 +8,7 @@ public:
 	//the work thread size of server
 	int nwork_thread_count;
 	//server bind port
-	int nbind_prot;
+	int nbind_port;
 	//server timeout option
 	int ntimeout;
 	//server bind ip address or host name

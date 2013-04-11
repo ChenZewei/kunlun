@@ -36,7 +36,7 @@ CBaseServer::~CBaseServer()
 	//so needn't to delete thread obj, just delete thread obj's container
 	if(m_ppthread != NULL)
 	{
-		delete m_ppthread;
+		delete [] m_ppthread;
 		m_ppthread = NULL;
 	}
 	if(m_pmsg_parser != NULL)
@@ -93,7 +93,7 @@ int CBaseServer::initilize()
 	}
 
 	pacceptor_ob = new CAcceptorOB(m_base_server_conf.bind_host, \
-		m_base_server_conf.nbind_prot, 1024, m_base_server_conf.ntimeout, \
+		m_base_server_conf.nbind_port, 1024, m_base_server_conf.ntimeout, \
 		m_pmsg_queue_arr);
 	if(pacceptor_ob == NULL)
 	{
@@ -103,7 +103,7 @@ int CBaseServer::initilize()
 		return ENOMEM;
 	}
 
-	//bug: maybe memory leak
+	//bug: maybe occur memory leaking
 	//initilize msg recv thread
 	pthread_msg_recv = new CThreadMsgRecv(pacceptor_ob);
 	if(pthread_msg_recv == NULL)
@@ -167,7 +167,7 @@ int CBaseServer::run()
 			return -1;
 		}
 	}
-	KL_SYS_NOTICELOG("kunlun(common) base server stop to run");
+	//KL_SYS_NOTICELOG("kunlun(common) base server start to run");
 	
 	while(true)
 	{
@@ -177,7 +177,7 @@ int CBaseServer::run()
 		select(0, NULL, NULL, NULL, NULL);
 	}
 #ifdef _DEBUG
-	KL_SYS_DEBUGLOG("kunlun(common) base server stop to run");
+	//KL_SYS_DEBUGLOG("kunlun(common) base server stop to run");
 #endif //_DEBUG
 	return 0;
 }

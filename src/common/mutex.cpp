@@ -5,61 +5,53 @@
 #include <string.h>
 #include <strings.h>
 #include "mutex.h"
-#include "common_types.h"
 
 CMutex::CMutex()
 {
-	char msgbuf[KL_COMMON_BUF_SIZE];
 	pthread_mutexattr_t mat;
 	int res;
 
 	if((res = pthread_mutexattr_init(&mat)) != 0){
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
-			"call pthread_mutexattr_init failed, " \
-			"err: %s", \
+		printf("file: "__FILE__", line: %d, " \
+			"call pthread_mutexattr_init failed, err: %s\n", \
 			__LINE__, strerror(res));
-		kl_errout(msgbuf);
+		return;
 	}
 
 	if((res = pthread_mutexattr_settype(&mat, \
 		PTHREAD_MUTEX_ERRORCHECK_NP)) != 0){
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
-			"call pthread_mutexattr_settype failed, " \
-			"err: %s", \
+		printf("file: "__FILE__", line: %d, " \
+			"call pthread_mutexattr_settype failed, err: %s\n", \
 			__LINE__, strerror(res));
-		kl_errout(msgbuf);
+		return;
 	}
 
 	if((res = pthread_mutex_init(&m_mutex, &mat)) != 0){
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, "\
-			"call pthread_mutex_init failed, err: %s", \
+		printf("file: "__FILE__", line: %d, "\
+			"call pthread_mutex_init failed, err: %s\n", \
 			__LINE__, strerror(res));
-		kl_errout(msgbuf);
+		return;
 	}
 
 	pthread_mutexattr_destroy(&mat);
+#ifdef _DEBUG
+	printf("call CMutex constructor successfully\n");
+#endif //_DEBUG
 }
 
 CMutex::~CMutex()
 {
-	char msgbuf[KL_COMMON_BUF_SIZE];
 	int res;
 	res = pthread_mutex_destroy(&m_mutex);
 	if(res != 0){
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d ," \
-			"call pthread_mutex_destroy failed, " \
-			"err: %s", \
+		printf("file: "__FILE__", line: %d ," \
+			"call pthread_mutex_destroy failed, err: %s\n", \
 			__LINE__, strerror(res));
-		printf("%s\n", msgbuf);
+		return;
 	}
+#ifdef _DEBUG
+	printf("call CMutex destructor successfully\n");
+#endif
 }
 
 int CMutex::lock()

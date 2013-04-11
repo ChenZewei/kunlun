@@ -3,29 +3,33 @@
 #include <sys/time.h>
 #include <strings.h>
 #include "cond.h"
+#include "log.h"
 #include "common_types.h"
 
 CCond::CCond()
 {
 	int res;
-	char msgbuf[KL_COMMON_BUF_SIZE];
 	pthread_condattr_t cond_attr;
 	pthread_condattr_init(&cond_attr);
 	if((res = pthread_cond_init(&m_cond, \
 		&cond_attr)) != 0)
 	{
-		bzero(msgbuf, KL_COMMON_BUF_SIZE);
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-			"file: "__FILE__", line: %d, " \
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call pthread_cond_init failed, err: %s", \
 			__LINE__, strerror(res));
-		kl_errout(msgbuf);
+		return;
 	}
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("call CCond constructor successfully");
+#endif //_DEBUG
 	pthread_condattr_destroy(&cond_attr);
 }
 
 CCond::~CCond()
 {
+#ifdef _DEBUG
+	KL_SYS_DEBUGLOG("call CCond destructor successfully");
+#endif
 	pthread_cond_destroy(&m_cond);
 }
 

@@ -1,16 +1,16 @@
 #.SUFFIXES: .cpp .o
-ALL_OBJS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epoll_engine.o epollclient.o \
-	epollserver.o event.o file.o file_test.o inetaddr.o log.o log_test.o msg_looper.o msg_parser.o \
+COMMON_OBJS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epoll_engine.o base_client_test.o \
+	base_server_test.o event.o file.o inetaddr.o log.o msg_looper.o msg_parser.o \
 	msg_queue.o mutex.o rwlock.o sock.o socknotifier.o sockobserver.o sockstream.o sockstreamOB.o \
-	stream_msg_packetizer.o thread.o thread_msg_recv.o thread_test.o
-EPOLLSERVER_OBJS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epoll_engine.o epollserver.o \
+	stream_msg_packetizer.o thread.o thread_msg_recv.o
+BASE_SERVER_TEST_OBJS = acceptor.o acceptorOB.o base_server.o cond.o connector.o epoll_engine.o base_server_test.o \
 	event.o file.o inetaddr.o log.o msg_looper.o msg_parser.o msg_queue.o mutex.o rwlock.o sock.o \
 	socknotifier.o sockobserver.o sockstream.o sockstreamOB.o stream_msg_packetizer.o thread.o thread_msg_recv.o
-EPOLLCLIENT_OBJS = epollclient.o
+BASE_CLIENT_TEST_OBJS = base_client_test.o
 BIN_DIR = ~/src/kunlun/bin
 COMPILE = g++ -pthread -g -D_DEBUG
 
-all : $(EPOLLSERVER_OBJS) $(EPOLLCLIENT_OBJS) epollserver epollclient
+all : $(EPOLLSERVER_OBJS) $(EPOLLCLIENT_OBJS) base_server_test base_client_test
 
 .o:
 	$(COMPILE) -o $@ $<
@@ -21,12 +21,12 @@ all : $(EPOLLSERVER_OBJS) $(EPOLLCLIENT_OBJS) epollserver epollclient
 .cpp.o:
 	$(COMPILE) -c -o $@ $<
 
-epollserver : $(EPOLLSERVER_OBJS)
-	$(COMPILE) -o $(BIN_DIR)/epollserver $(EPOLLSERVER_OBJS)
+base_server_test : $(BASE_SERVER_TEST_OBJS)
+	$(COMPILE) -o $(BIN_DIR)/base_server_test $(BASE_SERVER_TEST_OBJS)
 
-epollclient : $(EPOLLCLIENT_OBJS)
-	$(COMPILE) -o $(BIN_DIR)/epollclient $(EPOLLCLIENT_OBJS)
+base_client_test : $(BASE_CLIENT_TEST_OBJS)
+	$(COMPILE) -o $(BIN_DIR)/base_client_test $(BASE_CLIENT_TEST_OBJS)
 
 .PHONY : clean
 clean : 
-	-rm -rf $(ALL_OBJS)
+	-rm -rf $(COMMON_OBJS)
