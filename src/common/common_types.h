@@ -11,22 +11,45 @@
 #define KL_COMMON_EXIT_ERR		-1	//system exit with error
 #define KL_COMMON_EXIT_SYS		0	//system exit without error
 
+#ifdef USE_SELECT
+#define KL_COMMON_STREAM_IN
+#define KL_COMMON_STREAM_OUT
+#define KL_COMMON_STREAM_EXTEND	0
+#else
+#ifdef USE_POLL
+#define KL_COMMON_STREAM_IN
+#define KL_COMMON_STREAM_OUT
+#define KL_COMMON_STREAM_EXTEND	0
+#else //default : USE_EPOLL
+#define KL_COMMON_STREAM_IN EPOLLIN
+#define KL_COMMON_STREAM_OUT EPOLLOUT
+#define KL_COMMON_STREAM_EXTEND	EPOLLET
+#endif //USE_POLL
+#endif //USE_SELECT
+
+
 #include <stdio.h>
 #include <unistd.h>
 
-static void kl_errout(const char *str)
-{
-	/*
-	char msgbuf[KL_COMMON_BUF_SIZE];
+#ifdef __cplusplus
+extern "C" {
+#endif //__cplusplus
+	static void kl_errout(const char *str)
+	{
+		/*
+		char msgbuf[KL_COMMON_BUF_SIZE];
 
-	memset(msgbuf, 0, KL_COMMON_BUF_SIZE);
+		memset(msgbuf, 0, KL_COMMON_BUF_SIZE);
 
-	snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
+		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
 		"%s, err: %s\n", \
 		str, strerror(errno));
-	*/
-	printf("%s\n", str);
-	_exit(KL_COMMON_EXIT_ERR);
+		*/
+		printf("%s\n", str);
+		_exit(KL_COMMON_EXIT_ERR);
+	}
+#ifdef __cplusplus
 }
+#endif //__cplusplus
 
 #endif //KL_COMMON_TYPES_H_

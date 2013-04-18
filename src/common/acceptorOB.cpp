@@ -7,6 +7,7 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include "log.h"
+#include "common_types.h"
 #include "msg_queue.h"
 #include "acceptorOB.h"
 #include "stream_msg_packetizer.h"
@@ -40,7 +41,7 @@ void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 {
 	int res;
 	CSockStreamOB *psock_stream_ob;
-	if(nstatus & EPOLLIN){
+	if(nstatus & KL_COMMON_STREAM_IN){
 		while(true){
 			psock_stream_ob = new CStreamMsgPacketizer(m_pmsg_queue_arr);
 			res = stream_accept(psock_stream_ob);
@@ -51,7 +52,7 @@ void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 				break;
 			}
 			if(psock_notifier->attach(psock_stream_ob, \
-				EPOLLIN | EPOLLET) != 0)
+				KL_COMMON_STREAM_IN | KL_COMMON_STREAM_EXTEND) != 0)
 			{
 				delete psock_stream_ob;
 				psock_stream_ob = NULL;

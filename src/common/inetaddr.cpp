@@ -1,11 +1,16 @@
 #include <netdb.h>
 #include <errno.h>
 #include <stdio.h>
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include "log.h"
 #include "inetaddr.h"
+#ifdef _DEBUG
+#include <assert.h>
+#endif //_DEBUG
 
 CInetAddr::CInetAddr(const char *hostname, int port)
 {
@@ -44,6 +49,32 @@ void CInetAddr::setsockaddr(const struct sockaddr_in& sockAddr)
 struct sockaddr* CInetAddr::getsockaddr()
 {
 	return (struct sockaddr*)&m_sockaddr;
+}
+
+int CInetAddr::getipaddress(char *buf, int size)
+{
+#ifdef _DEBUG
+	assert(buf && size > 0);
+#endif //_DEBUG
+	char *paddress;
+	paddress = inet_ntoa(m_sockaddr.sin_addr);
+	if(paddress == NULL)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"swap ip address to string format failed, err: %s", \
+			__LINE__, strerror(errno));
+		return -1;
+	}
+	if(size < strlen(paddress))
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"the buffer size is less than the least space of ip string", \
+			__LINE__);
+		return -1;
+	}
+	memset(buf, 0, size);
+	memcpy(buf, paddress, strlen(paddress));
+	return 0;
 }
 
 int CInetAddr::getport()

@@ -8,16 +8,12 @@
 #include "common_protocol.h"
 #include "stream_msg_packetizer.h"
 #ifdef USE_SELECT
-#define KL_COMMON_STREAM_IN
-#define KL_COMMON_STREAM_OUT
+
 #else
 #ifdef USE_POLL
-#define KL_COMMON_STREAM_IN
-#define KL_COMMON_STREAM_OUT
+
 #else //default : USE_EPOLL
 #include <sys/epoll.h>
-#define KL_COMMON_STREAM_IN EPOLLIN
-#define KL_COMMON_STREAM_OUT EPOLLOUT
 #endif //USE_POLL
 #endif //USE_SELECT
 
