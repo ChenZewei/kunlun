@@ -17,21 +17,34 @@ void sigquithandler(int sig);
 
 int main(int argc, char *argv[])
 {
-	if(argc != 2){
-		printf("error args, Usage %s <conf_path>\n", argv[0]);
+	if(argc != 3){
+		printf("error args, Usage %s <port> <server_port>\n", argv[0]);
 		return -1;
 	}
 
 	int ret;
+	int nbind_port;
+	int nserver_port;
 	struct sigaction act;
 	CStorageServer *pstorage_server;
 	CStorageMsgParser *pstorage_msg_parser;
 	CStorageServerConf storage_server_conf;
+
+	nbind_port = atoi(argv[1]);
+	if(nbind_port < 0)
+	{
+		return -1;
+	}
+	nserver_port = atoi(argv[2]);
+	if(nserver_port < 0)
+	{
+		return -1;
+	}
 	
 	//should get info from storage conf file
-	CInetAddr proxy_addr("localhost", 6000);
+	CInetAddr proxy_addr("localhost", nserver_port);
 	storage_server_conf.bind_host = "localhost";
-	storage_server_conf.nbind_port = 6001;
+	storage_server_conf.nbind_port = nbind_port;
 	storage_server_conf.nlog_level = 4; //DEBUG level
 	storage_server_conf.nthread_stack_size = 1 * 1024 * 1024;
 	storage_server_conf.ntimeout = 5;

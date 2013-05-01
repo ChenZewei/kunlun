@@ -1,6 +1,7 @@
 #ifndef KL_PROXY_NODE_INFO_H_
 #define KL_PROXY_NODE_INFO_H_
 
+#include <list>
 #include <queue>
 #include <vector>
 #include <stdint.h>
@@ -32,6 +33,7 @@ public:
 	time_t last_update_time;
 	std::vector<int> vnode_list; //vnode_list, used to save vnode replica
 	std::queue<sync_event> sync_queue;
+	std::list<sync_event> syncing_list; //the list contain the vnode is syncing
 };
 
 class replica_info

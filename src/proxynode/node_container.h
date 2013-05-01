@@ -63,6 +63,12 @@ public:
 	 * @return: if successed, return 0, if failed, return -1
 	 */
 	int get_total_replica_count(int *ptotal_count, int *ptotal_weight);
+	/*
+	 * @brief: put out device's vnode count to log file
+	 */
+#ifdef _DEBUG
+	int putout_vnode_count();
+#endif //_DEBUG
 
 	CRWLock *m_pnode_rwlock;
 private:

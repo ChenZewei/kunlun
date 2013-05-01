@@ -83,7 +83,7 @@ int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 	pbody = (pdevice_join_body)((pkg_msg_ptr->pkg_ptr) + 2);
 	pdevice_bind_ip = (char*)(pbody->device_bind_ip);
 	//if peer ip is "0.0.0.0", try to get the peer true ip
-	if(strcpy(pdevice_bind_ip, "0.0.0.0") == 0)
+	if(strcmp(pdevice_bind_ip, "0.0.0.0") == 0)
 	{
 		CInetAddr peer_addr;
 		if(CTimedStream(pkg_msg_ptr->sock_stream_fd, \
@@ -95,6 +95,7 @@ int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 			delete pkg_msg_ptr;
 			return -1;
 		}
+		KL_SYS_INFOLOG("get peer address successfully");
 		peer_addr.getipaddress(pdevice_bind_ip, KL_COMMON_IP_ADDR_LEN);
 	}
 
@@ -153,6 +154,10 @@ int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 		delete pdevice_info;
 		pdevice_info = NULL;
 	}
+
+#ifdef _DEBUG
+	g_pdevice_container->putout_vnode_count();
+#endif //_DEBUG
 
 	if((res = g_pdevice_chg_rwlock->unlock()) != 0)
 	{
@@ -338,7 +343,7 @@ int CProxyMsgParser::do_device_join2(device_info_ptr pdevice_info)
 	assert(pdevice_info);
 #endif //_DEBUG
 
-	if(g_pdevice_container->get_total_replica_count(&total_count, &total_weight) <= 0)
+	if(g_pdevice_container->get_total_replica_count(&total_count, &total_weight) != 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"get total replica count failed", \
@@ -506,6 +511,11 @@ int CProxyMsgParser::do_device_join2(device_info_ptr pdevice_info)
 			}
 			pcurr_vnode->replica_list.push_back(pjoin_replica);
 			pdevice_info->vnode_list.push_back(vnode_index);
+			//check whether the move count is done
+			curr_move_count++;
+			if(curr_move_count >= move_count)
+				break;
+			goto_choose_another_vnode();
 		}
 	}
 	pdevice_info->last_update_time = time(NULL);

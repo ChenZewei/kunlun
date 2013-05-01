@@ -17,18 +17,24 @@ void sigquithandler(int sig);
 int main(int argc, char *argv[])
 {
 	if(argc != 2){
-		printf("error args, Usage %s <conf_path>\n", argv[0]);
+		printf("error args, Usage %s <port>\n", argv[0]);
 		return -1;
 	}
 
 	int ret;
+	int nbind_port;
 	struct sigaction act;
 	CProxyServer *pproxy_server;
 	CProxyMsgParser *pproxy_msg_parser;
 	CProxyServerConf proxy_server_conf;
 
+	nbind_port = atoi(argv[1]);
+	if(nbind_port < 0){
+		return -1;
+	}
+
 	proxy_server_conf.bind_host = NULL;
-	proxy_server_conf.nbind_port = 6000;
+	proxy_server_conf.nbind_port = nbind_port;
 	proxy_server_conf.nlog_level = 4; //DEBUG level
 	proxy_server_conf.nthread_stack_size = 1 * 1024 * 1024;
 	proxy_server_conf.ntimeout = 5;

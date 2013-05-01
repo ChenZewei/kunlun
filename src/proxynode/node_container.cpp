@@ -271,6 +271,20 @@ int CDeviceContainer::get_total_replica_count(int *ptotal_count, \
 	return 0;
 }
 
+#ifdef _DEBUG
+int CDeviceContainer::putout_vnode_count()
+{
+	int i;
+	for(i = 0; i < m_node_count; i++)
+	{
+		KL_SYS_DEBUGLOG("device(bind_ip: %s, bind_port: %d), vnode count: %d", \
+			m_pnode_container[i]->bind_ip, m_pnode_container[i]->bind_port, \
+			m_pnode_container[i]->vnode_list.size());
+	}
+	return 0;
+}
+#endif //_DEBUG
+
 CVnodeContainer::CVnodeContainer(int vnode_count, int replica_count) : \
 	m_vnode_count(vnode_count), m_replica_count(replica_count)
 {
