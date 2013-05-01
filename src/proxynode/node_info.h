@@ -1,138 +1,98 @@
 #ifndef KL_PROXY_NODE_INFO_H_
 #define KL_PROXY_NODE_INFO_H_
-/*
- * @description: in the kunlun destributed file system, the real storage node
-                 is named with device, and the virtual storage node is named
-				 with vnode. what's more, kunlun also use zone to limit
-				 different replicas of a file being save to the same zone
- */
+
+#include <queue>
+#include <vector>
 #include <stdint.h>
-#include <sys/types.h>
 #include "common_types.h"
 #include "common_protocol.h"
 
-#define KL_PROXY_CONTAINER_SIZE 100 /* define device node container size */
-typedef struct _device_info
+class device_info;
+typedef device_info *device_info_ptr;
+
+class sync_event
 {
+public:
+	int src_vnode_index;
+	device_info_ptr pdest_node;
+};
+typedef sync_event *sync_event_ptr;
+
+class device_info
+{
+public:
+	int erase_vnode(int vnode_index);
+
+	//deprecated device_id
 	int device_id; //sign the device in the storage node cluster(online)(not use)
 	int zone_id;
-	int vnode_count;
 	int weight;
 	char bind_ip[KL_COMMON_IP_ADDR_LEN];
 	int bind_port;
 	time_t last_update_time;
-}device_info, *device_info_ptr;
-
-typedef struct _replica_info
-{
-	byte replica_status;
-	device_info_ptr preplica;
-}replica_info, *replica_info_ptr;
-
-typedef struct _vnode_info
-{
-	int vnode_id;
-//	int64_t key_hash; //key_hash divide the name space of kunlun to equivalent parts
-	int64_t version; //vnode version
-	int wr_req_robin;
-	int rd_req_robin;
-	replica_info_ptr replica_list;
-}vnode_info, *vnode_info_ptr;
-
-class CRWLock;
-class CDeviceContainer
-{
-public:
-	CDeviceContainer();
-	~CDeviceContainer();
-	
-	/*
-	 * @param: pdevice_info, must be created on heap(use operator new)
-	           and deleted by CDeviceContainer
-	 */
-	int add_node(device_info_ptr pdevice_info);
-	/*
-	 * @param: pdevice_info, CDeviceContainer isn't sure to release the
-	           memory hold by pdevice_info
-	 * @description: the function merge the node info to node container, 
-	                 but it can't create a node in node container, if the
-					 merged node isn't in container, the function will return
-					 -1, if merge node successfully, the function will return 0
-	 */
-	int merge_node(device_info_ptr pdevice_info);
-	/*
-	 * @param: pdevice_info, the function will use the ip info and port info in
-	           pdevice_info to make sure the node that will be deleted in node 
-			   container, CDeviceContainer isn't sure to release the memory holding
-			   by pdevice_info
-	 */
-	int delete_node(device_info_ptr pdevice_info);
-	/*
-	 * @param: expected_zones, a list structure, the function will return a device node
-	           info expected in these zones
-	 * @param: count, the size of expected_zones
-	 * @description: the function will return the node info in the head node container,
-	                 the function will sort the node container with qsort to make sure
-					 return a node that it's volume is the least
-	 */
-	device_info_ptr get_node(int *expected_zones, int count);
-	/*
-	 * @brief: get online device count
-	 */
-	int get_node_count();
-private:
-	/*
-	 * @description: compare the two nodes by their volume, if ptr1's volume
-	                 is larger than ptr2, the function will return 1, if ptr1's
-					 volume equal to ptr2, the function will return 0, if ptr1's
-					 volume is smaller than ptr2, the function will return -1
-	 */
-	static int node_vol_cmp(const void *ptr1, const void *ptr2);
-	/*
-	 * @description: compare the two nodes by their ip address and port address,
-	                 if they have the same ip and port, the function will return
-					 0, otherwise, the function will return -1
-	 */
-	int node_diff_cmp(device_info_ptr ptr1, device_info_ptr ptr2);
-
-	device_info_ptr *m_pnode_container;
-	int m_node_count;
-	int m_container_size;
-	CRWLock *m_pnode_rwlock;
+	std::vector<int> vnode_list; //vnode_list, used to save vnode replica
+	std::queue<sync_event> sync_queue;
 };
 
-class CVnodeContainer
+class replica_info
 {
 public:
-	CVnodeContainer(int vnode_count, int replica_count);
-	~CVnodeContainer();
-	/*
-	 * @brief: must be called after creating a CVnodeContainer obj
-	 */
-	int initilize();
-	/*
-	 * @brief: merge vnode info to the specified vnode in vnode container
-	 * @param: pvnode_info, the vnode info that will be merged
-	 * @return: success, return 0, if can't locate the specified vnode in vnode
-	            container, return -1
-	 */
-	int merge_vnode(vnode_info_ptr pvnode_info);
-	/*
-	 * @brief: get the vnode info by the specified vnode index
-	 * @param: index, the vnode index in container
-	 * @return: return the pointer of the specified vnode
-	 */
-	vnode_info_ptr get_vnode(int index);
-	int get_replica_count();
+	byte replica_status;
+	device_info_ptr preplica;
+};
+typedef replica_info *replica_info_ptr;
+
+class vnode_info
+{
+public:
+	~vnode_info();
 	/*
 	 * @brief: get a replica to write data
 	 * @param: index, the vnode index
+	 * @param: ppreplica, if get replica successfully, the function will set the pointer
+	           to the choosen replica, otherwise, set the pointer to null
+	 * @return: if call successfully, return 0, if has no active replica, return -1, 
+	            otherwise, return -2
 	 */
-	replica_info_ptr get_write_replica(int index);
-private:
-	int m_vnode_count;
-	int m_replica_count;
-	CRWLock *m_pvnode_rwlock;
-	vnode_info_ptr *m_pvnode_container;
+	int get_write_replica(replica_info_ptr *ppreplica);
+	/*
+	 * @brief: get a replica to read data
+	 * @param: index, the vnode index
+	 * @param: ppreplica, if get replica successfully, the function will set the pointer
+	           to the choosen replica, otherwise, set the pointer to null
+	 * @return: if call successfully, return 0, if has no active replica, return -1, 
+	            otherwise, return -2
+	 */
+	int get_read_replica(replica_info_ptr *ppreplica);
+	/*
+	 * @brief: get the specified replica's status
+	 * @param: preplica, specify replica
+	 * @return: if successed, return the replica pointer, if failed, return NULL
+	 */
+	replica_info_ptr get_replica_info(device_info_ptr preplica);
+	/*
+	 * @brief: test the joining device whether located in different zones with vnode's replicas
+	 * @param: pjoin_device, the device info that will be test
+	 * @return if locating in different zones, return true, otherwise, return false;
+	 */
+	bool is_diff_zones(device_info_ptr pjoin_device);
+	/*
+	 * @brief: destroy the specified replica info
+	 * @param: preplica, the specified replica
+	 * @return: always return 0
+	 */
+	int destroy_replica_info(device_info_ptr preplica);
+
+	//vnode_id will not be changed after vnode being intilized
+	//when version wr_req_robin rd_req_robin replica_list's status be changed,
+	//we must use vnode rwlock to make sure the consistency of data
+	int vnode_id;
+	//	int64_t key_hash; //key_hash divide the name space of kunlun to equivalent parts
+	int64_t version; //vnode version
+	int wr_req_robin;
+	int rd_req_robin;
+	//replica_list's size changing only occurred when device join or exit
+	std::vector<replica_info_ptr> replica_list; 
 };
+typedef vnode_info *vnode_info_ptr;
 #endif //KL_PROXY_NODE_INFO_H_

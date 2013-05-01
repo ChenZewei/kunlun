@@ -15,7 +15,7 @@ CMutex::CMutex()
 		printf("file: "__FILE__", line: %d, " \
 			"call pthread_mutexattr_init failed, err: %s\n", \
 			__LINE__, strerror(res));
-		return;
+		throw res;
 	}
 
 	if((res = pthread_mutexattr_settype(&mat, \
@@ -23,20 +23,17 @@ CMutex::CMutex()
 		printf("file: "__FILE__", line: %d, " \
 			"call pthread_mutexattr_settype failed, err: %s\n", \
 			__LINE__, strerror(res));
-		return;
+		throw res;
 	}
 
 	if((res = pthread_mutex_init(&m_mutex, &mat)) != 0){
 		printf("file: "__FILE__", line: %d, "\
 			"call pthread_mutex_init failed, err: %s\n", \
 			__LINE__, strerror(res));
-		return;
+		throw res;
 	}
 
 	pthread_mutexattr_destroy(&mat);
-#ifdef _DEBUG
-	printf("call CMutex constructor successfully\n");
-#endif //_DEBUG
 }
 
 CMutex::~CMutex()
@@ -47,11 +44,8 @@ CMutex::~CMutex()
 		printf("file: "__FILE__", line: %d ," \
 			"call pthread_mutex_destroy failed, err: %s\n", \
 			__LINE__, strerror(res));
-		return;
+		throw res;
 	}
-#ifdef _DEBUG
-	printf("call CMutex destructor successfully\n");
-#endif
 }
 
 int CMutex::lock()

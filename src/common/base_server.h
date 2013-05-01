@@ -13,10 +13,9 @@ public:
 	CBaseServer(CBaseServerConf base_server_conf, CMsgParser *pmsg_parser);
 	virtual ~CBaseServer();
 
+	int initilize();
 	virtual int run();
 	int stop();
-protected:
-	int initilize();
 protected:
 	int m_work_thread_count;
 	CBaseServerConf m_base_server_conf;

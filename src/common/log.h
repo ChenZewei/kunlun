@@ -12,6 +12,9 @@ enum LOG_LEVEL{LOG_LEVEL_ERROR, LOG_LEVEL_WARNNING, LOG_LEVEL_NOTICE, LOG_LEVEL_
 class CLog
 {
 public:
+	/*
+	 * @brief: if call failed, throw the errcode
+	 */
 	CLog(const char *path, LOG_LEVEL level);
 	~CLog();
 

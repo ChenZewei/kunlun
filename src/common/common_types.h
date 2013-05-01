@@ -27,6 +27,8 @@
 #endif //USE_POLL
 #endif //USE_SELECT
 
+#include <new>
+#define kl_new new(std::nothrow)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -34,20 +36,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
+
 	static void kl_errout(const char *str)
 	{
-		/*
-		char msgbuf[KL_COMMON_BUF_SIZE];
-
-		memset(msgbuf, 0, KL_COMMON_BUF_SIZE);
-
-		snprintf(msgbuf, KL_COMMON_BUF_SIZE, \
-		"%s, err: %s\n", \
-		str, strerror(errno));
-		*/
 		printf("%s\n", str);
 		_exit(KL_COMMON_EXIT_ERR);
 	}
+
 #ifdef __cplusplus
 }
 #endif //__cplusplus

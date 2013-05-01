@@ -1,3 +1,4 @@
+#include <new>
 #include <stdio.h>
 #include <time.h>
 #include <errno.h>
@@ -6,34 +7,59 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include "rwlock.h"
-#include "file.h"
 #include "log.h"
+#include "file.h"
+#include "rwlock.h"
 
 CLog *g_psys_log = NULL;
 
 CLog::CLog(const char *path, LOG_LEVEL level)
 {
-	m_plog_file = new CFile(path, O_RDWR | O_CREAT | O_APPEND, \
-		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	try
+	{
+		m_plog_file = new CFile(path, O_RDWR | O_CREAT | O_APPEND, \
+			S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	}
+	catch(std::bad_alloc)
+	{
+		m_plog_file = NULL;
+	}
+	catch(int errcode)
+	{
+		printf("file: "__FILE__", line: %d, "\
+			"open log file failed, err: %s\n", \
+			__LINE__, strerror(errcode));
+		throw errcode;
+	}
 	if(m_plog_file == NULL){
 		printf("file: "__FILE__", line: %d, "\
 			"open log file failed, err: %s\n", \
 			__LINE__, strerror(ENOMEM));
-		return;
+		throw ENOMEM;
 	}
 
 	m_level = level;
-	m_plog_rwlock = new CRWLock();
+	try
+	{
+		m_plog_rwlock = new CRWLock();
+	}
+	catch(std::bad_alloc)
+	{
+		m_plog_rwlock = NULL;
+	}
+	catch(int errcode)
+	{
+		printf("file: "__FILE__", line: %d, "\
+			"create log lock failed, err: %s\n", \
+			__LINE__, strerror(errcode));
+		throw errcode;
+	}
 	if(m_plog_rwlock == NULL){
 		printf("file: "__FILE__", line: %d, "\
 			"create log lock failed, err: %s\n", \
 			__LINE__, strerror(ENOMEM));
-		return;
+		throw ENOMEM;
 	}
-#ifdef _DEBUG
-	printf("call CLog constructor successfully\n");
-#endif //_DEBUG
 }
 
 CLog::~CLog()
@@ -47,9 +73,6 @@ CLog::~CLog()
 		delete m_plog_rwlock;
 		m_plog_rwlock = NULL;
 	}
-#ifdef _DEBUG
-	printf("call CLog destructor successfully\n");
-#endif
 }
 
 int CLog::writelog(LOG_LEVEL level, const char *format, ...)

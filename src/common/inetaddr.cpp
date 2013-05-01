@@ -12,6 +12,11 @@
 #include <assert.h>
 #endif //_DEBUG
 
+CInetAddr::CInetAddr()
+{
+	memset(&m_sockaddr, 0, sizeof(m_sockaddr));
+}
+
 CInetAddr::CInetAddr(const char *hostname, int port)
 {
 	setsockaddr(hostname, port);
@@ -21,9 +26,9 @@ CInetAddr::~CInetAddr()
 {
 }
 
-CInetAddr& CInetAddr::operator = (const struct sockaddr_in& sockAddr)
+CInetAddr& CInetAddr::operator = (const struct sockaddr_in& sockaddr)
 {
-	memcpy(&m_sockaddr, &sockAddr, sizeof(sockAddr));
+	memcpy(&m_sockaddr, &sockaddr, sizeof(sockaddr));
 	return *this;
 }
 
@@ -33,17 +38,19 @@ void CInetAddr::setsockaddr(const char *hostname, int port)
 	m_sockaddr.sin_family = AF_INET;
 	m_sockaddr.sin_port = htons(port);
 	struct hostent *phostent;
-	if(hostname != NULL && \
-			(phostent = gethostbyname(hostname)) != NULL){
+	if(hostname != NULL && (phostent = gethostbyname(hostname)) != NULL)
+	{
 		inet_aton(phostent->h_addr, &m_sockaddr.sin_addr);
-	}else{
+	}
+	else
+	{
 		inet_aton("0.0.0.0", &m_sockaddr.sin_addr);
 	}
 }
 
-void CInetAddr::setsockaddr(const struct sockaddr_in& sockAddr)
+void CInetAddr::setsockaddr(const struct sockaddr_in& sockaddr)
 {
-	memcpy(&m_sockaddr, &sockAddr, sizeof(sockAddr));
+	memcpy(&m_sockaddr, &sockaddr, sizeof(sockaddr));
 }
 
 struct sockaddr* CInetAddr::getsockaddr()
@@ -57,6 +64,8 @@ int CInetAddr::getipaddress(char *buf, int size)
 	assert(buf && size > 0);
 #endif //_DEBUG
 	char *paddress;
+
+	memset(buf, 0, size);
 	paddress = inet_ntoa(m_sockaddr.sin_addr);
 	if(paddress == NULL)
 	{
@@ -72,7 +81,6 @@ int CInetAddr::getipaddress(char *buf, int size)
 			__LINE__);
 		return -1;
 	}
-	memset(buf, 0, size);
 	memcpy(buf, paddress, strlen(paddress));
 	return 0;
 }
@@ -86,11 +94,12 @@ int CInetAddr::get_host_name(char *buf, int size)
 {
 	int nlen;
 	struct hostent *phostent;
-	phostent = gethostbyaddr(&m_sockaddr.sin_addr, \
-		sizeof(struct in_addr), AF_INET);
-	if(phostent != NULL){
+	phostent = gethostbyaddr(&m_sockaddr.sin_addr, sizeof(struct in_addr), AF_INET);
+	if(phostent != NULL)
+	{
 		nlen = strlen(phostent->h_name) + 1;
-		if(nlen > size){
+		if(nlen > size)
+		{
 			return -1;
 		}
 		memcpy(buf, phostent->h_name, nlen);

@@ -47,15 +47,20 @@ int CSockStream::stream_send(const void *buf, size_t len)
 	nwrite = 0;
 	ptr = (const unsigned char*)buf;
 
-	while(nleft > 0){
+	while(nleft > 0)
+	{
 		nwrite = send(m_fd, ptr, nleft, 0);
-		if(nwrite < 0){
-			if(errno == EINTR || errno == EAGAIN){
+		if(nwrite < 0)
+		{
+			if(errno == EINTR || errno == EAGAIN)
+			{
 				usleep(1000);
 				continue;
 			} //was interrupted or buffer is full
 			return -1; //other error
-		}else if(nwrite == 0){
+		}
+		else if(nwrite == 0)
+		{
 			return 0;	//opposite side was closed
 		}
 
@@ -75,19 +80,26 @@ int CSockStream::stream_recv(void *buf, size_t len)
 	nread = 0;
 	ptr = (unsigned char*)buf;
 
-	while(nleft > 0){
+	while(nleft > 0)
+	{
 		nread = recv(m_fd, ptr, nleft, 0);
-		if(nread < 0){
-			if(errno == EINTR){
+		if(nread < 0)
+		{
+			if(errno == EINTR)
+			{
 				//was interrupted
 				usleep(1000);
 				continue;
-			}else if(errno == EAGAIN){
+			}
+			else if(errno == EAGAIN)
+			{
 				//buffer is empty
 				return len - nleft;
 			}
 			return -1;
-		}else if(nread == 0){
+		}
+		else if(nread == 0)
+		{
 			//opposite side was closed
 			return 0;
 		}

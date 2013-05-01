@@ -32,11 +32,6 @@ CStreamMsgPacketizer::CStreamMsgPacketizer(int sock, \
 
 CStreamMsgPacketizer::~CStreamMsgPacketizer()
 {
-	if(m_pbody != NULL)
-	{
-		delete m_pbody;
-		m_pbody = NULL;
-	}
 }
 
 void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
@@ -55,6 +50,7 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 	bool bfirst_recv;
 	int nbytes_recv;
 	int64_t nbytes_body;
+	pkg_message *pkg_msg_ptr;
 	byte buf[KL_COMMON_BUF_SIZE];
 	byte *pbuf;
 	
@@ -63,11 +59,12 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 		bfirst_recv = true;
 		while(true)
 		{
+			//KL_SYS_INFOLOG("sock stream start to receive data");
 			memset(buf, 0, KL_COMMON_BUF_SIZE);
 			nbytes_recv = stream_recv(buf, KL_COMMON_BUF_SIZE);
 			if(nbytes_recv <= 0)
 			{
-				if(EAGAIN != errno)
+				if(nbytes_recv < 0)
 				{
 					KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
 						"stream(fd: %d) recv failed, err: %s", \
@@ -76,6 +73,7 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 
 				if(bfirst_recv)
 				{
+					//KL_SYS_INFOLOG("sockstream peer closed");
 					psock_notifier->detach(this);
 					delete this;
 				}
@@ -125,14 +123,31 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 					//push msg pkg to message queue
 #ifdef _DEBUG
 					KL_SYS_DEBUGLOG("file: "__FILE__", line: %d, " \
-						"push msg(cmd = %d) to msg queue(id = %d)", \
-						__LINE__, m_pkg_header.cmd, m_pmsg_queue_arr->m_queue_robin);
+						"push msg(cmd = %d, src fd: %d) to msg queue(id = %d), left bytes: %d", \
+						__LINE__, m_pkg_header.cmd, this->getsocket(), m_pmsg_queue_arr->m_queue_robin, \
+						nbytes_recv);
 #endif //_DEBUG
-					pkg_message *pkg_msg_ptr = new pkg_message();
+					try
+					{
+						pkg_msg_ptr= new pkg_message();
+					}
+					catch(std::bad_alloc)
+					{
+						pkg_msg_ptr = NULL;
+					}
+					if(pkg_msg_ptr == NULL)
+					{
+						KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+							"no more memory to create msg obj, push msg to msg queue failed", \
+							__LINE__);
+						return;
+					}
+
 					pkg_msg_ptr->sock_stream_fd = m_fd;
 					pkg_msg_ptr->pkg_len = nbytes_body + 2;
 					pkg_msg_ptr->pkg_ptr = m_pbody;
 					(m_pmsg_queue_arr->getmsgqueuebyrobin())->push_msg(pkg_msg_ptr);
+					KL_SYS_INFOLOG("push msg to msg queue successfully");
 					m_pbody = NULL;
 					m_nbody_recv = 0;
 					m_nheader_recv = 0;

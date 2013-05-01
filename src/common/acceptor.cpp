@@ -22,6 +22,7 @@ CAcceptor::CAcceptor(const char *host, int bind_port, \
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"set SO_REUSEADDR failed, err: %s", \
 			__LINE__, strerror(errno));
+		throw errno;
 	}
 
 	if(bind(m_fd, sockAddr.getsockaddr(), \
@@ -29,6 +30,7 @@ CAcceptor::CAcceptor(const char *host, int bind_port, \
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call bind failed, err: %s", \
 			__LINE__, strerror(errno));
+		throw errno;
 	}
 	listen(m_fd, backlog);
 
@@ -36,9 +38,6 @@ CAcceptor::CAcceptor(const char *host, int bind_port, \
 		setserveropt(timeout);
 
 	setnonblocking();
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CAcceptor constructor call successfully");
-#endif //_DEBUG
 }
 
 CAcceptor::CAcceptor(CInetAddr& sockAddr, 
@@ -51,6 +50,7 @@ CAcceptor::CAcceptor(CInetAddr& sockAddr,
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"set SO_REUSEADDR failed, err: %s", \
 			__LINE__, strerror(errno));
+		throw errno;
 	}
 
 	if(bind(m_fd, sockAddr.getsockaddr(), \
@@ -58,6 +58,7 @@ CAcceptor::CAcceptor(CInetAddr& sockAddr,
 			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"call bind failed, err: %s", \
 				__LINE__, strerror(errno));
+			throw errno;
 	}
 	listen(m_fd, backlog);
 

@@ -36,7 +36,8 @@ int CMsgLooper::run()
 	}
 
 	m_stop_flag = false;
-	while(m_stop_flag != true){
+	while(m_stop_flag != true)
+	{
 		if((pkg_msg_ptr = m_pmsg_queue->get_msg()) == NULL)
 		{
 			KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \

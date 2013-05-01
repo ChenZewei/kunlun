@@ -1,3 +1,4 @@
+#include <new>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -21,7 +22,30 @@ CBaseServer::CBaseServer(CBaseServerConf base_server_conf, CMsgParser *pmsg_pars
 #ifdef _DEBUG
 	assert(m_pmsg_parser);
 #endif //_DEBUG
-	initilize();
+	//initilize system log
+	LOG_LEVEL sys_log_level;
+	sys_log_level = (LOG_LEVEL)(m_base_server_conf.nlog_level);
+
+	try
+	{
+		g_psys_log = new CLog(m_base_server_conf.sys_log_path, \
+			sys_log_level);
+	}
+	catch(std::bad_alloc)
+	{
+		g_psys_log = NULL;
+	}
+	catch(int errcode)
+	{
+		throw errcode;
+	}
+	if(g_psys_log == NULL)
+	{
+		printf("file: "__FILE__", line: %d, " \
+			"no more memory to create object g_psys_log", \
+			__LINE__);
+		throw ENOMEM;
+	}
 }
 
 CBaseServer::~CBaseServer()
@@ -44,9 +68,6 @@ CBaseServer::~CBaseServer()
 		delete m_pmsg_parser;
 		m_pmsg_parser = NULL;
 	}
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CBaseServer destructor call successfully");
-#endif //_DEBUG
 }
 
 int CBaseServer::initilize()
@@ -54,27 +75,28 @@ int CBaseServer::initilize()
 	typedef CThread* CThreadPtr;
 
 	int nwork_thread_curr;
-	LOG_LEVEL sys_log_level;
 	CAcceptorOB *pacceptor_ob;
 	CThreadMsgRecv *pthread_msg_recv;
 	CMsgLooper *pmsg_looper;
 
 	m_work_thread_count = m_base_server_conf.nwork_thread_count;
 
-	//initilize system log
-	sys_log_level = (LOG_LEVEL)(m_base_server_conf.nlog_level);
-	g_psys_log = new CLog(m_base_server_conf.sys_log_path, \
-		sys_log_level);
-	if(g_psys_log == NULL)
-	{
-		printf("file: "__FILE__", line: %d, " \
-			"no more memory for object g_psys_log", \
-			__LINE__);
-		return ENOMEM;
-	}
-
 	//create a message queue for every work thread
-	m_pmsg_queue_arr = new CMsgQueueArr(m_work_thread_count);
+	try
+	{
+		m_pmsg_queue_arr = new CMsgQueueArr(m_work_thread_count);
+	}
+	catch(std::bad_alloc)
+	{
+		m_pmsg_queue_arr = NULL;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CMsgQueueArr constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		return errcode;
+	}
 	if(m_pmsg_queue_arr == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -83,7 +105,14 @@ int CBaseServer::initilize()
 		return ENOMEM;
 	}
 
-	m_ppthread = new CThreadPtr[m_work_thread_count + 1];
+	try
+	{
+		m_ppthread = new CThreadPtr[m_work_thread_count + 1];
+	}
+	catch(std::bad_alloc)
+	{
+		m_ppthread = NULL;
+	}
 	if(m_ppthread == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -92,9 +121,23 @@ int CBaseServer::initilize()
 		return ENOMEM;
 	}
 
-	pacceptor_ob = new CAcceptorOB(m_base_server_conf.bind_host, \
-		m_base_server_conf.nbind_port, 1024, m_base_server_conf.ntimeout, \
-		m_pmsg_queue_arr);
+	try
+	{
+		pacceptor_ob = new CAcceptorOB(m_base_server_conf.bind_host, \
+			m_base_server_conf.nbind_port, 1024, m_base_server_conf.ntimeout, \
+			m_pmsg_queue_arr);
+	}
+	catch(std::bad_alloc)
+	{
+		pacceptor_ob = NULL;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CAcceptorOB constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		return errcode;
+	}
 	if(pacceptor_ob == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -105,7 +148,21 @@ int CBaseServer::initilize()
 
 	//bug: maybe occur memory leaking
 	//initilize msg recv thread
-	pthread_msg_recv = new CThreadMsgRecv(pacceptor_ob);
+	try
+	{
+		pthread_msg_recv = new CThreadMsgRecv(pacceptor_ob);
+	}
+	catch(std::bad_alloc)
+	{
+		pthread_msg_recv = NULL;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CThreadMsgRecv constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		return errcode;
+	}
 	if(pthread_msg_recv == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -113,8 +170,23 @@ int CBaseServer::initilize()
 			__LINE__);
 		return ENOMEM;
 	}
-	m_ppthread[0] = new CThread(pthread_msg_recv, \
-		m_base_server_conf.nthread_stack_size, true);
+
+	try
+	{
+		m_ppthread[0] = new CThread(pthread_msg_recv, \
+			m_base_server_conf.nthread_stack_size, true);
+	}
+	catch(std::bad_alloc)
+	{
+		m_ppthread[0] = NULL;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CThread constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		return errcode;
+	}
 	if(m_ppthread[0] == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -127,7 +199,22 @@ int CBaseServer::initilize()
 	for(nwork_thread_curr = 1; nwork_thread_curr <= m_work_thread_count; \
 		nwork_thread_curr++)
 	{
-		pmsg_looper = new CMsgLooper(m_pmsg_queue_arr->getmsgqueuebyrobin(), m_pmsg_parser);
+		try
+		{
+			pmsg_looper = new CMsgLooper(m_pmsg_queue_arr->getmsgqueuebyrobin(), \
+				m_pmsg_parser);
+		}
+		catch(std::bad_alloc)
+		{
+			pmsg_looper = NULL;
+		}
+		catch(int errcode)
+		{
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+				"call CMsgLooper constructor failed, err: %s", \
+				__LINE__, strerror(errcode));
+			return errcode;
+		}
 		if(pmsg_looper == NULL)
 		{
 			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -135,8 +222,23 @@ int CBaseServer::initilize()
 				__LINE__);
 			return ENOMEM;
 		}
-		m_ppthread[nwork_thread_curr] = new CThread(pmsg_looper, \
-			m_base_server_conf.nthread_stack_size, true);
+
+		try
+		{
+			m_ppthread[nwork_thread_curr] = new CThread(pmsg_looper, \
+				m_base_server_conf.nthread_stack_size, true);
+		}
+		catch(std::bad_alloc)
+		{
+			m_ppthread[nwork_thread_curr] = NULL;
+		}
+		catch(int errcode)
+		{
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+				"call CThread constructor failed, err: %s", \
+				__LINE__, strerror(errcode));
+			return errcode;
+		}
 		if(m_ppthread[nwork_thread_curr] == NULL)
 		{
 			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -145,9 +247,6 @@ int CBaseServer::initilize()
 			return ENOMEM;
 		}
 	}
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CBaseServer::initilize function call successfully");
-#endif //_DEBUG
 	return 0;
 }
 

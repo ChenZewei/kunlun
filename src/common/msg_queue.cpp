@@ -1,13 +1,82 @@
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <new>
+#include "log.h"
 #include "mutex.h"
 #include "event.h"
 #include "msg_queue.h"
 
 CMsgQueue::CMsgQueue()
 {
-	m_ppush_mutex = new CMutex();
-	m_ppop_mutex = new CMutex();
-	m_pmsg_event = new CEvent(true);
+	try
+	{
+		m_ppush_mutex = new CMutex();
+	}
+	catch(std::bad_alloc)
+	{
+		m_ppush_mutex = NULL;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CMutex constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		throw errcode;
+	}
+	if(m_ppush_mutex == NULL)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no more memory to create push mutex", \
+			__LINE__);
+		throw ENOMEM;
+	}
+
+	try
+	{
+		m_ppop_mutex = new CMutex();
+	}
+	catch(std::bad_alloc)
+	{
+		m_ppop_mutex = NULL;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CMutex constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		throw errcode;
+	}
+	if(m_ppop_mutex == NULL)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no more memory to create pop mutex", \
+			__LINE__);
+		throw ENOMEM;
+	}
+
+	try
+	{
+		m_pmsg_event = new CEvent(true);
+	}
+	catch(std::bad_alloc)
+	{
+		m_pmsg_event = NULL;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CEvent constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		throw errcode;
+	}
+	if(m_pmsg_event == NULL)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no more memory to create msg event", \
+			__LINE__);
+		throw ENOMEM;
+	}
 }
 
 CMsgQueue::~CMsgQueue()
@@ -52,9 +121,21 @@ pkg_message* CMsgQueue::get_msg()
 
 void CMsgQueue::push(pkg_message *pkg_msg_ptr)
 {
-	m_ppush_mutex->lock();
+	int res;
+	if((res = m_ppush_mutex->lock()) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"lock the push mutex failed", \
+			__LINE__, strerror(res));
+		return;
+	}
 	m_msg_queue.push(pkg_msg_ptr);
-	m_ppush_mutex->unlock();
+	if((res = m_ppush_mutex->unlock()) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"unlock the push mutex failed", \
+			__LINE__, strerror(res));
+	}
 }
 
 pkg_message* CMsgQueue::pop()

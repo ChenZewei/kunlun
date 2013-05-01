@@ -44,17 +44,20 @@ int main(int argc, char *argv[])
 	}
 
 	pthread_mutex_init(&io_lock, NULL);
-	for(i = 0; i < 20; i++){
+	for(i = 0; i < 20; i++)
+	{
 		ThreadArgs *pta = new ThreadArgs();
 		pta->port = port;
 		strcpy(pta->host, argv[1]);
-		if(pthread_create(&pid[i], NULL, client_process, pta) == -1){
+		if(pthread_create(&pid[i], NULL, client_process, pta) == -1)
+		{
 			perror("pthread_create error");
 			return -1;
 		}
 	}
 
-	for(i = 0; i < 20; i++){
+	for(i = 0; i < 20; i++)
+	{
 		pthread_join(pid[i], NULL);
 	}
 	pthread_mutex_destroy(&io_lock);
@@ -71,7 +74,8 @@ void* client_process(void *args)
 
 	ThreadArgs *pta = (ThreadArgs*)args;
 	sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(sock_fd == -1){
+	if(sock_fd == -1)
+	{
 		delete pta;
 		return NULL;
 	}
@@ -80,7 +84,8 @@ void* client_process(void *args)
 	serverAddr.sin_port = htons(pta->port);
 	inet_aton(pta->host, &serverAddr.sin_addr);
 	if(connect(sock_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) \
-			== -1){
+			== -1)
+	{
 		perror("connect error");
 		delete pta;
 		return NULL;
@@ -88,7 +93,8 @@ void* client_process(void *args)
 	
 	sprintf(outbuf, "client(thread: %ld) send test1 data", gettid());
 	base_msg_header base_header;
-	for(i = 0; i < 20; i++){
+	for(i = 0; i < 20; i++)
+	{
 		base_header.cmd = KL_COMMON_PROTOCOL_MSG_TEST1;
 		base_header.status = 0;
 		CSERIALIZER::long2buff(strlen(outbuf), base_header.pkg_len);

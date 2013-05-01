@@ -16,13 +16,15 @@ CSock::CSock()
 
 CSock::CSock(int domain, int type)
 {
-	open(domain, type);
+	if(open(domain, type) < 0)
+		throw errno;
 }
 
 CSock::~CSock()
 {
 	if(m_fd != -1)
 	{
+		//KL_SYS_INFOLOG("close socket fd: %d", m_fd);
 		close(m_fd);
 		m_fd = -1;
 	}

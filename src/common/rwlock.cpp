@@ -14,7 +14,7 @@ CRWLock::CRWLock()
 		printf("file: "__FILE__", line: %d, " \
 			"call pthread_rwlockattr_init failed, err: %s\n", \
 			__LINE__, strerror(res));
-		return;
+		throw res;
 	}
 
 	if((res = pthread_rwlockattr_setpshared(&rwlock_attr, \
@@ -23,7 +23,7 @@ CRWLock::CRWLock()
 		printf("file: "__FILE__", line: %d, " \
 			"set rwlock attr to PTHREAD_PROCESS_SHARED failed, err: %s\n", \
 			__LINE__, strerror(res));
-		return;
+		throw res;
 	}
 
 	if((res = pthread_rwlock_init(&m_rwlock, &rwlock_attr)) != 0)
@@ -31,20 +31,14 @@ CRWLock::CRWLock()
 		printf("file: "__FILE__", line: %d, " \
 			"call pthread_rwlock_init failed, err: %s\n", \
 			__LINE__, strerror(res));
-		return;
+		throw res;
 	}
 	pthread_rwlockattr_destroy(&rwlock_attr);
-#ifdef _DEBUG
-	printf("call CRWLock constructor successfully\n");
-#endif //_DEBUG
 }
 
 CRWLock::~CRWLock()
 {
 	pthread_rwlock_destroy(&m_rwlock);
-#ifdef _DEBUG
-	printf("call CRWLock destructor successfully\n");
-#endif //_DEBUG
 }
 
 int CRWLock::rdlock()

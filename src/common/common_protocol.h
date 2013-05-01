@@ -3,12 +3,19 @@
 
 #define KL_COMMON_PKG_LEN_SIZE	8
 typedef unsigned char byte;
-typedef struct _pkg_header
+#ifdef __cplusplus
+extern "C"
 {
-	byte pkg_len[KL_COMMON_PKG_LEN_SIZE];
-	byte cmd;
-	byte status;
-}pkg_header, *pkg_header_ptr;
+#endif //__cplusplus
+	typedef struct _pkg_header
+	{
+		byte pkg_len[KL_COMMON_PKG_LEN_SIZE];
+		byte cmd;
+		byte status;
+	}pkg_header, *pkg_header_ptr;
+#ifdef __cplusplus
+}
+#endif //__cplusplus
 
 #include <stdint.h>
 #include <stdio.h>
@@ -28,7 +35,7 @@ public:
 	{
 		if(pkg_ptr != NULL)
 		{
-			delete pkg_ptr;
+			delete [] pkg_ptr;
 			pkg_ptr = NULL;
 		}
 	}

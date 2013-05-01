@@ -15,13 +15,10 @@ CEpollEngine::CEpollEngine()
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"create epoll fd failed, err: %s", \
 			__LINE__, strerror(errno));
-		return;
+		throw errno;
 	}
 	m_timeout = -1;
 	memset(m_events, 0, sizeof(m_events));
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CEpollEngine constructor call successfully");
-#endif //_DEBUG
 }
 
 CEpollEngine::CEpollEngine(int size, int timeout)
@@ -31,13 +28,10 @@ CEpollEngine::CEpollEngine(int size, int timeout)
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"create epoll fd failed, err: %s", \
 			__LINE__, strerror(errno));
-		return;
+		throw errno;
 	}
 	m_timeout = timeout;
 	memset(m_events, 0, sizeof(m_events));
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CEpollEngine constructor call successfully");
-#endif //_DEBUG
 }
 
 /*
@@ -57,14 +51,12 @@ CEpollEngine::~CEpollEngine()
 			KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
 				"detach fd: %d failed, err: %s", \
 				__LINE__, psock_ob->get_fd(), strerror(errno));
+			throw errno;
 		}
 		delete psock_ob;
 		psock_ob = NULL;
 	}
 	close(m_epfd);
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CEpollEngine destructor call successfully");
-#endif //_DEBUG
 }
 
 int CEpollEngine::open(int size)
@@ -132,16 +124,19 @@ int CEpollEngine::notify()
 	CSockObserver *psock_ob;
 
 	m_stop_flag = false;
-	while(m_stop_flag != true){
+	while(m_stop_flag != true)
+	{
 		nfds = epoll_wait(m_epfd, m_events, KL_COMMON_EPOLL_FD_SIZE, m_timeout);
-		if(nfds == -1){
+		if(nfds == -1)
+		{
 			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"epoll_wait was interrupted, epoll engine stop to work, err: %s", \
 				__LINE__, strerror(errno));
 			return -1;
 		}
 
-		for(i = 0; i < nfds; i++){
+		for(i = 0; i < nfds; i++)
+		{
 			psock_ob = (CSockObserver*)(m_events[i].data.ptr);
 			psock_ob->work(this, m_events[i].events);
 		}

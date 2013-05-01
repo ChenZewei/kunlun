@@ -2,6 +2,9 @@
 #define KL_COMMON_MSG_QUEUE_H_
 
 #include <queue>
+#include <errno.h>
+#include <string.h>
+#include "log.h"
 #include "common_protocol.h"
 class CMutex;
 class CEvent;
@@ -39,11 +42,44 @@ public:
 	{
 		typedef CMsgQueue* CMsgQueuePtr;
 		int msg_queue_curr;
-		m_ppmsg_queue = new CMsgQueuePtr[m_msg_queue_count];
+		try
+		{
+			m_ppmsg_queue = new CMsgQueuePtr[m_msg_queue_count];
+		}
+		catch(std::bad_alloc)
+		{
+			m_ppmsg_queue = NULL;
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+				"no more memory to create msg queue array", \
+				__LINE__);
+			throw ENOMEM;
+		}
+
 		for(msg_queue_curr = 0; msg_queue_curr < m_msg_queue_count; \
 			msg_queue_curr++)
 		{
-			m_ppmsg_queue[msg_queue_curr] = new CMsgQueue();
+			try
+			{
+				m_ppmsg_queue[msg_queue_curr] = new CMsgQueue();
+			}
+			catch(std::bad_alloc)
+			{
+				m_ppmsg_queue[msg_queue_curr] = NULL;
+			}
+			catch(int errcode)
+			{
+				KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+					"call CMsgQueue constructor failed, err: %s", \
+					__LINE__, strerror(errcode));
+				throw errcode;
+			}
+			if(m_ppmsg_queue[msg_queue_curr] == NULL)
+			{
+				KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+					"no more memory to create msg queue", \
+					__LINE__);
+				throw ENOMEM;
+			}
 		}
 	}
 

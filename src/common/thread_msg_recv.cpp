@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include "log.h"
 #include "acceptorOB.h"
@@ -25,13 +27,27 @@ CThreadMsgRecv::CThreadMsgRecv(CAcceptorOB *pacceptor_ob) : \
 #ifdef USE_POLL
 
 #else //default : USE_EPOLL
-	m_pepoll_engine = new CEpollEngine();
+	try
+	{
+		m_pepoll_engine = new CEpollEngine();
+	}
+	catch(std::bad_alloc)
+	{
+		m_pepoll_engine = NULL;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CEpollEngine constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		throw errcode;
+	}
 	if(m_pepoll_engine == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"no more memory for server to create epoll engine object", \
 			__LINE__);
-		return;
+		throw ENOMEM;
 	}
 #endif //USE_SELECT
 #endif //USE_POLL

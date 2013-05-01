@@ -1,18 +1,22 @@
+#include <new>
+#include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <errno.h>
 #include "log.h"
+#include "mutex.h"
 #include "base_server.h"
 #include "msg_parser.h"
 #include "common_types.h"
 #include "common_protocol.h"
-#include "sockstream.h"
+#include "timed_stream.h"
 #include "base_server_conf.h"
+
 #ifdef _DEBUG
 #include <assert.h>
 #endif //_DEBUG
@@ -24,6 +28,7 @@
 //#define KL_COMMON_PROTOCOL_MSG_TEST3 2
 #define KL_COMMON_PROTOCOL_MSG_SERVER_RESP 3
 typedef pkg_header base_msg_header;
+CMutex g_console_mutex;
 
 class CBaseMsgParser : public CMsgParser
 {
@@ -55,11 +60,19 @@ int CBaseMsgParser::parse_msg(pkg_message* pkg_msg_ptr)
 int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 {
 	int res;
+	char *pbody;
 	char resp_body[KL_COMMON_BUF_SIZE];
-	CSockStream *psock_stream;
+	CTimedStream *psock_stream;
 	base_msg_header msg_resp_header;
 
-	psock_stream = new CSockStream(pkg_msg_ptr->sock_stream_fd, false);
+	try
+	{
+		psock_stream = new CTimedStream(pkg_msg_ptr->sock_stream_fd, false);
+	}
+	catch(std::bad_alloc)
+	{
+		psock_stream = NULL;
+	}
 	if(psock_stream == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -68,8 +81,29 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 		res = -1;
 		goto error_handle;
 	}
+
+	try
+	{
+		pbody = new char[pkg_msg_ptr->pkg_len - 1];
+	}
+	catch(std::bad_alloc)
+	{
+		pbody = NULL;
+	}
+	if(pbody == NULL)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no more memory to create msg body array", \
+			__LINE__);
+		res = -1;
+		goto error_handle;
+	}
+	memcpy(pbody, pkg_msg_ptr->pkg_ptr + 2, pkg_msg_ptr->pkg_len - 2);
+	*(pbody + pkg_msg_ptr->pkg_len - 2) = '\0';
+	g_console_mutex.lock();
 	printf("msg_test1_callback(thread: %ld) data : %s, and server(thread: %ld) response\n", \
-		gettid(), (char*)(pkg_msg_ptr->pkg_ptr + 2), gettid());
+		gettid(), pbody, gettid());
+	g_console_mutex.unlock();
 
 	msg_resp_header.cmd = KL_COMMON_PROTOCOL_MSG_SERVER_RESP;
 	msg_resp_header.status = 0;
@@ -78,7 +112,7 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 		gettid());
 	CSERIALIZER::long2buff(strlen(resp_body), msg_resp_header.pkg_len);
 	if((res = psock_stream->stream_send(&msg_resp_header, \
-		sizeof(base_msg_header))) <= 0)
+		sizeof(base_msg_header), 5)) <= 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"send responsed msg header failed, err: %s", \
@@ -87,7 +121,7 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 		goto error_handle;
 	}
 
-	if((res = psock_stream->stream_send(resp_body, strlen(resp_body))) <= 0)
+	if((res = psock_stream->stream_send(resp_body, strlen(resp_body), 5)) <= 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"send responsed msg body failed, err: %s", \
@@ -109,6 +143,8 @@ error_handle:
 	return res;
 }
 
+void sighuphandler(int sig);
+
 int main(int argc, char *argv[])
 {
 	if(argc != 2){
@@ -117,6 +153,10 @@ int main(int argc, char *argv[])
 	}
 
 	int nbind_port;
+	int ret;
+	struct sigaction act;
+	CBaseServer *pbase_server;
+	CMsgParser *pmsg_parser;
 	CBaseServerConf base_server_conf;
 
 	nbind_port = atoi(argv[1]);
@@ -132,16 +172,54 @@ int main(int argc, char *argv[])
 	base_server_conf.nwork_thread_count = 10;
 	base_server_conf.sys_log_path = "./kunlun_sys.log";
 	
-	CBaseServer *pbase_server;
-	CMsgParser *pmsg_parser;
-	pmsg_parser = new CBaseMsgParser();
-	pbase_server = new CBaseServer(base_server_conf, pmsg_parser);
+	try
+	{
+		pmsg_parser = new CBaseMsgParser();
+	}
+	catch(std::bad_alloc)
+	{
+		pmsg_parser = NULL;
+	}
+	try
+	{
+		pbase_server = new CBaseServer(base_server_conf, pmsg_parser);
+	}
+	catch(std::bad_alloc)
+	{
+		pbase_server = NULL;
+	}
+	catch(int errcode)
+	{
+		printf("file: "__FILE__", line: %d, " \
+			"call CBaseServer constructor failed, err: %s\n", \
+			__LINE__, strerror(errcode));
+		return errcode;
+	}
 	if(pbase_server == NULL)
 	{
 		printf("file: "__FILE__", line: %d, " \
 			"no more memory to create base server", \
 			__LINE__);
 		return ENOMEM;
+	}
+
+	memset(&act, 0, sizeof(act));
+	sigemptyset(&act.sa_mask);
+	act.sa_handler = sighuphandler;
+	if(sigaction(SIGHUP, &act, NULL) < 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call sigaction fail, err: %s", \
+			__LINE__, strerror(errno));
+		return errno;
+	}
+
+	if((ret = pbase_server->initilize()) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"initilize base server failed, errcode: %d", \
+			__LINE__, ret);
+		return ret;
 	}
 	KL_SYS_NOTICELOG("kunlun(common test) base server has been started, " \
 					 "and listen on port: %d. All copyrights are reserved " \
@@ -150,5 +228,11 @@ int main(int argc, char *argv[])
 	pbase_server->run();
 	KL_SYS_NOTICELOG("epollserver exit...");
 	delete pbase_server;
+	delete g_psys_log;
 	return 0;
+}
+
+void sighuphandler(int sig)
+{
+	printf("catch a SIGHUP signal, ignore\n");
 }

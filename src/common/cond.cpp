@@ -17,19 +17,13 @@ CCond::CCond()
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call pthread_cond_init failed, err: %s", \
 			__LINE__, strerror(res));
-		return;
+		throw res;
 	}
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("call CCond constructor successfully");
-#endif //_DEBUG
 	pthread_condattr_destroy(&cond_attr);
 }
 
 CCond::~CCond()
 {
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("call CCond destructor successfully");
-#endif
 	pthread_cond_destroy(&m_cond);
 }
 

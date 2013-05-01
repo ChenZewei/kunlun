@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <strings.h>
 #include "thread.h"
@@ -7,36 +8,29 @@
 
 CThread::CThread() : m_pthread_func(this), m_tid(-1)
 {
-	if(init_pthread_attr(0, true) != 0){
+	int res;
+	if((res = init_pthread_attr(0, true)) != 0){
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
-			"init thread attribute failed", \
-			__LINE__);
-		return;
+			"init thread attribute failed, err: %s", \
+			__LINE__, strerror(res));
+		throw res;
 	}
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CThread constructor call successfully");
-#endif //_DEBUG
 }
 
 CThread::CThread(CThreadFunc *pThreadFunc, const int stack_size, \
 	bool bdetach) : m_pthread_func(pThreadFunc), m_tid(-1)
 {
-	if(init_pthread_attr(stack_size, bdetach) != 0){
+	int res;
+	if((res = init_pthread_attr(stack_size, bdetach)) != 0){
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
-			"init thread attribute failed", \
-			__LINE__);
-		return;
+			"init thread attribute failed, err: %s", \
+			__LINE__, strerror(res));
+		throw res;
 	}
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CThread constructor call successfully");
-#endif //_DEBUG
 }
 
 CThread::~CThread()
 {
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CThread destructor call successfully");
-#endif //_DEBUG
 	if(m_pthread_func != NULL){
 		if(m_pthread_func != this)
 			delete m_pthread_func;

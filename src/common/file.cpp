@@ -22,11 +22,8 @@ CFile::CFile(const char *path, int flags)
 		printf("file: "__FILE__", line: %d, " \
 			"open file(path: %s) failed, err: %s\n", \
 			__LINE__, path, strerror(errno));
-		return;
+		throw errno;
 	}
-#ifdef _DEBUG
-	printf("call CFile constructor successfully\n");
-#endif //_DEBUG
 }
 
 CFile::CFile(const char *path, int flags, mode_t mode)
@@ -37,11 +34,8 @@ CFile::CFile(const char *path, int flags, mode_t mode)
 		printf("file: "__FILE__", line: %d, " \
 			"open file(path: %s) failed, err: %s\n", \
 			__LINE__, path, strerror(errno));
-		return;
+		throw errno;
 	}
-#ifdef _DEBUG
-	printf("call CFile constructor successfully\n");
-#endif //_DEBUG
 }
 
 CFile::~CFile()

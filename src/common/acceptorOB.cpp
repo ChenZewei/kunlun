@@ -1,3 +1,4 @@
+#include <new>
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -17,9 +18,6 @@ CAcceptorOB::CAcceptorOB(const char *host, int bind_port, \
 	CAcceptor(host, bind_port, backlog, timeout), \
 	m_pmsg_queue_arr(msg_queue_arr_ptr)
 {
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CAcceptorOB constructor call successfully");
-#endif //_DEBUG
 }
 
 CAcceptorOB::CAcceptorOB(CInetAddr& sockAddr, int backlog, \
@@ -27,9 +25,6 @@ CAcceptorOB::CAcceptorOB(CInetAddr& sockAddr, int backlog, \
 	CAcceptor(sockAddr, backlog, timeout), \
 	m_pmsg_queue_arr(msg_queue_arr_ptr)
 {
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CAcceptorOB constructor call successfully");
-#endif //_DEBUG
 }
 
 int CAcceptorOB::get_fd() const
@@ -41,11 +36,34 @@ void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 {
 	int res;
 	CSockStreamOB *psock_stream_ob;
-	if(nstatus & KL_COMMON_STREAM_IN){
-		while(true){
-			psock_stream_ob = new CStreamMsgPacketizer(m_pmsg_queue_arr);
+	if(nstatus & KL_COMMON_STREAM_IN)
+	{
+		while(true)
+		{
+			try
+			{
+				psock_stream_ob = new CStreamMsgPacketizer(m_pmsg_queue_arr);
+			}
+			catch(std::bad_alloc)
+			{
+				psock_stream_ob = NULL;
+			}
+			catch(int errcode)
+			{
+				KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+					"call CStreamMsgPacketizer constructor failed, err: %s", \
+					__LINE__, strerror(errcode));
+				continue;
+			}
+			if(psock_stream_ob == NULL)
+			{
+				KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+					"no more memory to ceate sock stream");
+				continue;
+			}
 			res = stream_accept(psock_stream_ob);
-			if(res == -1){	//failed or has no connection
+			if(res == -1)
+			{	//failed or has no connection
 				delete psock_stream_ob;
 				if(errno == EINTR)
 					continue;
