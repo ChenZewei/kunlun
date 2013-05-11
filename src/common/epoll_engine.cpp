@@ -43,7 +43,8 @@ CEpollEngine::~CEpollEngine()
 {
 	std::list<CSockObserver*>::iterator iter;
 	CSockObserver *psock_ob;
-	for(iter = m_ob_list.begin(); iter != m_ob_list.end(); iter++){
+	for(iter = m_ob_list.begin(); iter != m_ob_list.end(); iter++)
+	{
 		psock_ob = *(iter);
 		if(epoll_ctl(m_epfd, EPOLL_CTL_DEL, psock_ob->get_fd(), \
 			NULL) != 0)
