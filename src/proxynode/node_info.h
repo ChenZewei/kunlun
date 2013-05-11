@@ -2,7 +2,6 @@
 #define KL_PROXY_NODE_INFO_H_
 
 #include <list>
-#include <queue>
 #include <vector>
 #include <stdint.h>
 #include "common_types.h"
@@ -29,10 +28,10 @@ public:
 	int zone_id;
 	int weight;
 	char bind_ip[KL_COMMON_IP_ADDR_LEN];
-	int bind_port;
+	int nbind_port;
 	time_t last_update_time;
 	std::vector<int> vnode_list; //vnode_list, used to save vnode replica
-	std::queue<sync_event> sync_queue;
+	std::list<sync_event> sync_list;
 	std::list<sync_event> syncing_list; //the list contain the vnode is syncing
 };
 

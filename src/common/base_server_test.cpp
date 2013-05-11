@@ -62,18 +62,18 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 	int res;
 	char *pbody;
 	char resp_body[KL_COMMON_BUF_SIZE];
-	CTimedStream *psock_stream;
+	CTimedStream *presp_stream;
 	base_msg_header msg_resp_header;
 
 	try
 	{
-		psock_stream = new CTimedStream(pkg_msg_ptr->sock_stream_fd, false);
+		presp_stream = new CTimedStream(pkg_msg_ptr->sock_stream_fd, false);
 	}
 	catch(std::bad_alloc)
 	{
-		psock_stream = NULL;
+		presp_stream = NULL;
 	}
-	if(psock_stream == NULL)
+	if(presp_stream == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"no more memory to create sock stream obj", \
@@ -103,6 +103,7 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 	g_console_mutex.lock();
 	printf("msg_test1_callback(thread: %ld) data : %s, and server(thread: %ld) response\n", \
 		gettid(), pbody, gettid());
+	delete [] pbody;
 	g_console_mutex.unlock();
 
 	msg_resp_header.cmd = KL_COMMON_PROTOCOL_MSG_SERVER_RESP;
@@ -111,22 +112,20 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 		"msg_test1_callback(thread: %ld) response the request", \
 		gettid());
 	CSERIALIZER::long2buff(strlen(resp_body), msg_resp_header.pkg_len);
-	if((res = psock_stream->stream_send(&msg_resp_header, \
-		sizeof(base_msg_header), 5)) <= 0)
+	if((res = presp_stream->stream_send(&msg_resp_header, \
+		sizeof(base_msg_header), 5)) != 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"send responsed msg header failed, err: %s", \
-			__LINE__, strerror(errno));
-		res = -1;
+			__LINE__, strerror(res));
 		goto error_handle;
 	}
 
-	if((res = psock_stream->stream_send(resp_body, strlen(resp_body), 5)) <= 0)
+	if((res = presp_stream->stream_send(resp_body, strlen(resp_body), 5)) != 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"send responsed msg body failed, err: %s", \
-			__LINE__, strerror(errno));
-		res = -1;
+			__LINE__, strerror(res));
 		goto error_handle;
 	}
 	res = 0;
@@ -135,15 +134,16 @@ error_handle:
 	delete pkg_msg_ptr;
 	pkg_msg_ptr = NULL;
 
-	if(psock_stream != NULL)
+	if(presp_stream != NULL)
 	{
-		delete psock_stream;
-		psock_stream = NULL;
+		delete presp_stream;
+		presp_stream = NULL;
 	}
 	return res;
 }
 
 void sighuphandler(int sig);
+void sigpipehandler(int sig);
 
 int main(int argc, char *argv[])
 {
@@ -213,6 +213,14 @@ int main(int argc, char *argv[])
 			__LINE__, strerror(errno));
 		return errno;
 	}
+	act.sa_handler = sigpipehandler;
+	if(sigaction(SIGPIPE, &act, NULL) < 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call sigaction fail, err: %s", \
+			__LINE__, strerror(errno));
+		return errno;
+	}
 
 	if((ret = pbase_server->initilize()) != 0)
 	{
@@ -235,4 +243,9 @@ int main(int argc, char *argv[])
 void sighuphandler(int sig)
 {
 	printf("catch a SIGHUP signal, ignore\n");
+}
+
+void sigpipehandler(int sig)
+{
+	printf("catch a SIGPIPE signal, ignore\n");
 }

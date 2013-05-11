@@ -24,9 +24,9 @@ CProxyServer::~CProxyServer()
 int CProxyServer::initilize()
 {
 	//do proxy initilize
-	g_master_flag = m_proxy_server_conf.bmaster_flag;
+	g_bmaster_flag = m_proxy_server_conf.bmaster_flag;
 	g_namespace_power = m_proxy_server_conf.nnamespace_power;
-	g_timeout = m_proxy_server_conf.ntimeout;
+	g_ntimeout = m_proxy_server_conf.ntimeout;
 	
 	try
 	{
@@ -67,6 +67,13 @@ int CProxyServer::initilize()
 			"call CVnodeContainer constructor failed, err: %s", \
 			__LINE__, strerror(errcode));
 		return errcode;
+	}
+	if(g_pvnode_container->initilize() != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call vnode container initilize failed", \
+			__LINE__);
+		return -1;
 	}
 
 	try

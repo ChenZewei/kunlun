@@ -2,6 +2,8 @@
 #define KL_PROXY_MSG_PARSER_H_
 #include "node_info.h"
 #include "msg_parser.h"
+#include "timed_stream.h"
+#include "proxy_protocol.h"
 class CProxyMsgParser : public CMsgParser
 {
 public:
@@ -14,18 +16,14 @@ public:
 	int msg_device_report_handle(pkg_message* pkg_msg_ptr);
 private:
 	/*
-	 * @brief: do device joining operation when the count of node less than
-	           the count of replica
-	 * @param: pdevice_info, the device info will be joined to node container
-	 * @return: if successed, return 0, otherwise, return -1
+	 * @brief: master do device beat-hearting info merged
 	 */
-	int do_device_join1(device_info_ptr pdevice_info);
+	int master_do_device_merge(device_info_ptr pdevice_info, pvnode_list_unit pvnode_list, \
+		int vnode_count, CTimedStream *presp_stream);
 	/*
-	 * @brief: do device joining operation when the count of node larger than
-	           the count of replica
-	 * @param: pdevice_info, the device info will be joined to node container
-	 * @return: if successed, return 0, otherwise, return -1
+	 * @brief: slaver do device beat-hearting info merged
 	 */
-	int do_device_join2(device_info_ptr pdevice_info);
+	int slaver_do_device_merge(device_info_ptr pdevice_info, pvnode_list_unit pvnode_list, \
+		int vnode_count);
 };
 #endif //KL_PROXY_MSG_PARSER_H_

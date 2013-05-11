@@ -9,9 +9,9 @@ class CStorageServerConf : public CBaseServerConf
 {
 public:
 	//zone id
-	int zone_id;
+	int nzone_id;
 	// the weight of storage node
-	int weight;
+	int nweight;
 	//the list of proxy address
 	 addr_list proxy_addr_list;
 };

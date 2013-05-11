@@ -9,6 +9,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include "log.h"
+#include "timed_stream.h"
 #include "common_protocol.h"
 
 #define gettid() syscall(SYS_gettid)
@@ -44,6 +46,7 @@ int main(int argc, char *argv[])
 	}
 
 	pthread_mutex_init(&io_lock, NULL);
+	g_psys_log = new CLog("./base_client_test.log", LOG_LEVEL_DEBUG);
 	for(i = 0; i < 20; i++)
 	{
 		ThreadArgs *pta = new ThreadArgs();
@@ -66,7 +69,8 @@ int main(int argc, char *argv[])
 
 void* client_process(void *args)
 {
-	int i;
+	int i, ret;
+	int64_t pkg_len;
 	int sock_fd;
 	char inbuf[100];
 	char outbuf[100];
@@ -93,24 +97,59 @@ void* client_process(void *args)
 	
 	sprintf(outbuf, "client(thread: %ld) send test1 data", gettid());
 	base_msg_header base_header;
+	CTimedStream timed_stream(sock_fd);
 	for(i = 0; i < 20; i++)
 	{
 		base_header.cmd = KL_COMMON_PROTOCOL_MSG_TEST1;
 		base_header.status = 0;
 		CSERIALIZER::long2buff(strlen(outbuf), base_header.pkg_len);
-		send(sock_fd, &base_header, sizeof(base_msg_header), 0);
-		send(sock_fd, outbuf, strlen(outbuf), 0);
+		/*send(sock_fd, &base_header, sizeof(base_msg_header), 0);
+		send(sock_fd, outbuf, strlen(outbuf), 0);*/
+		if((ret = timed_stream.stream_send(&base_header, sizeof(base_header), 5)) != 0)
+		{
+			printf("file: "__FILE__", line: %d, " \
+				"timed stream send base header failed, err: %s\n", \
+				__LINE__, strerror(ret));
+			delete pta;
+			return NULL;
+		}
+		if((ret = timed_stream.stream_send(outbuf, strlen(outbuf), 5)) != 0)
+		{
+			printf("file: "__FILE__", line: %d, " \
+				"timed stream send base msg body failed, err: %s\n", \
+				__LINE__, strerror(ret));
+			delete pta;
+			return NULL;
+		}
 		pthread_mutex_lock(&io_lock);
 		printf("client(thread: %ld) send data to server\n", gettid());
 		pthread_mutex_unlock(&io_lock);
 
-		recv(sock_fd, &base_header, sizeof(base_msg_header), 0);
-		recv(sock_fd, inbuf, sizeof(inbuf), 0);
+		/*recv(sock_fd, &base_header, sizeof(base_msg_header), 0);
+		recv(sock_fd, inbuf, sizeof(inbuf), 0);*/
+		if((ret = timed_stream.stream_recv(&base_header, sizeof(base_header), 1)) != 0)
+		{
+			printf("file: "__FILE__", line: %d, " \
+				"timed stream recv base msg header failed, err: %s\n", \
+				__LINE__, strerror(ret));
+			delete pta;
+			return NULL;
+		}
+		memset(inbuf, 0, sizeof(inbuf));
+		pkg_len = CSERIALIZER::buff2int64(base_header.pkg_len);
+		if((ret = timed_stream.stream_recv(inbuf, pkg_len, 1)) != 0)
+		{
+			printf("file: "__FILE__", line: %d, " \
+				"timed stream recv base msg body failed, err: %s\n", \
+				__LINE__, strerror(ret));
+			delete pta;
+			return NULL;
+		}
 		pthread_mutex_lock(&io_lock);
 		printf("client(thread: %ld) recv data from server: %s\n", gettid(), inbuf);
 		pthread_mutex_unlock(&io_lock);
 	}
-	close(sock_fd);
+	//close(sock_fd);
 	delete pta;
 	return NULL;
 }

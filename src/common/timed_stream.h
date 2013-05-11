@@ -15,7 +15,13 @@ public:
 	CTimedStream(int sock, bool bclosed);
 	~CTimedStream();
 
+	/*
+	 * @return: if successed, return 0, otherwise, return errno
+	 */
 	int stream_send(const void *buf, size_t len, int timeout);
+	/*
+	 * @return: if successed, return 0, otherwise, return errno
+	 */
 	int stream_recv(void *buf, size_t len, int timeout);
 };
 #endif //KL_COMMON_POLL_STREAM_H_

@@ -9,8 +9,8 @@ extern CLog *g_psys_log;
 extern CDeviceContainer *g_pdevice_container;
 extern CVnodeContainer *g_pvnode_container;
 extern int g_namespace_power;
-extern bool g_master_flag;
-extern int g_timeout;
+extern bool g_bmaster_flag;
+extern int g_ntimeout;
 extern CRWLock *g_pdevice_chg_rwlock;
 
 #ifdef __cplusplus

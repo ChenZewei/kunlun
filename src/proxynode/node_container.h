@@ -55,6 +55,10 @@ public:
 	 */
 	device_info_ptr get_node(int index);
 	/*
+	 * @brief: get online device by addr
+	 */
+	device_info_ptr get_node_by_addr(char *pdevice_ip, int nport);
+	/*
 	 * @brief: get online device count
 	 */
 	int get_node_count();

@@ -9,7 +9,7 @@ COMMON_OBJS = ../common/acceptor.o ../common/acceptorOB.o ../common/base_server.
 	../common/sockstream.o ../common/sockstreamOB.o ../common/stream_msg_packetizer.o \
 	../common/thread.o ../common/thread_msg_recv.o ../common/timed_stream.o
 STORAGENODE_OBJS = storage_global.o storage_msg_parser.o storage_server.o thread_beat_heart.o \
-	vnode_info.o
+	thread_sync_data.o vnode_info.o
 PROGRAM = kunlun_storaged
 BIN_DIR = ~/src/kunlun/bin
 COMPILE = g++ -pthread -g -D_DEBUG

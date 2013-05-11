@@ -13,6 +13,7 @@
 void sigusrhandler(int sig);
 void sighuphandler(int sig);
 void sigquithandler(int sig);
+void sigpipehandler(int sig);
 
 int main(int argc, char *argv[])
 {
@@ -98,7 +99,7 @@ int main(int argc, char *argv[])
 		return errno;
 	}
 
-	act.sa_handler = SIG_IGN;
+	act.sa_handler = sigpipehandler;
 	if(sigaction(SIGPIPE, &act, NULL) < 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -150,4 +151,9 @@ void sighuphandler(int sig)
 void sigquithandler(int sig)
 {
 
+}
+
+void sigpipehandler(int sig)
+{
+	//printf("catch a SIGPIPE signal, ignore\n");
 }

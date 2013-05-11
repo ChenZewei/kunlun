@@ -77,7 +77,7 @@ int CDeviceContainer::node_diff_cmp(device_info_ptr ptr1, device_info_ptr ptr2)
 	assert(ptr1 && ptr2);
 #endif //_DEBUG
 	if((memcmp(ptr1->bind_ip, ptr2->bind_ip, KL_COMMON_IP_ADDR_LEN) == 0) \
-		&& (ptr1->bind_port == ptr2->bind_port))
+		&& (ptr1->nbind_port == ptr2->nbind_port))
 		return 0;
 	return -1;
 }
@@ -237,6 +237,22 @@ device_info_ptr CDeviceContainer::get_node(int index)
 	return m_pnode_container[index];
 }
 
+device_info_ptr CDeviceContainer::get_node_by_addr(char *pdevice_ip, int nport)
+{
+	int i;
+	device_info dest_device;
+	
+	memset(dest_device.bind_ip, 0, KL_COMMON_IP_ADDR_LEN);
+	strcpy(dest_device.bind_ip, pdevice_ip);
+	dest_device.nbind_port = nport;
+	for(i = 0; i < m_node_count; i++)
+	{
+		if(node_diff_cmp(&dest_device, m_pnode_container[i]) == 0)
+			return m_pnode_container[i];
+	}
+	return NULL;
+}
+
 int CDeviceContainer::get_node_count()
 {
 	return m_node_count;
@@ -278,7 +294,7 @@ int CDeviceContainer::putout_vnode_count()
 	for(i = 0; i < m_node_count; i++)
 	{
 		KL_SYS_DEBUGLOG("device(bind_ip: %s, bind_port: %d), vnode count: %d", \
-			m_pnode_container[i]->bind_ip, m_pnode_container[i]->bind_port, \
+			m_pnode_container[i]->bind_ip, m_pnode_container[i]->nbind_port, \
 			m_pnode_container[i]->vnode_list.size());
 	}
 	return 0;
@@ -322,7 +338,6 @@ CVnodeContainer::CVnodeContainer(int vnode_count, int replica_count) : \
 				"no more memory to create a vnode info object");
 			throw ENOMEM;
 		}
-		m_pvnode_container[vnode_curr]->vnode_id = vnode_curr;
 	}
 
 	try

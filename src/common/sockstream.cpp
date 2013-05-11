@@ -39,7 +39,7 @@ void CSockStream::setsockstream(int sock)
 
 int CSockStream::stream_send(const void *buf, size_t len)
 {
-	int nleft;
+	/*int nleft;
 	int nwrite;
 	const unsigned char *ptr;
 
@@ -67,12 +67,13 @@ int CSockStream::stream_send(const void *buf, size_t len)
 		nleft -= nwrite;
 		ptr += nwrite;
 	}
-	return len - nleft;
+	return len - nleft;*/
+	return send(m_fd, buf, len, 0);
 }
 
 int CSockStream::stream_recv(void *buf, size_t len)
 {
-	int nleft;
+	/*int nleft;
 	int nread;
 	unsigned char *ptr;
 
@@ -108,5 +109,6 @@ int CSockStream::stream_recv(void *buf, size_t len)
 		ptr += nread;
 	}
 
-	return len - nleft;
+	return len - nleft;*/
+	return recv(m_fd, buf, len, 0);
 }

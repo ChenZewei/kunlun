@@ -14,6 +14,7 @@
 void sigusrhandler(int sig);
 void sighuphandler(int sig);
 void sigquithandler(int sig);
+void sigpipehandler(int sig);
 
 int main(int argc, char *argv[])
 {
@@ -50,8 +51,8 @@ int main(int argc, char *argv[])
 	storage_server_conf.ntimeout = 5;
 	storage_server_conf.nwork_thread_count = 10;
 	storage_server_conf.sys_log_path = "./kunlun_storage.log";
-	storage_server_conf.zone_id = 0;
-	storage_server_conf.weight = 1;
+	storage_server_conf.nzone_id = 0;
+	storage_server_conf.nweight = 1;
 	storage_server_conf.proxy_addr_list.push_back(proxy_addr);
 
 	try
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
 		return errno;
 	}
 
-	act.sa_handler = SIG_IGN;
+	act.sa_handler = sigpipehandler;
 	if(sigaction(SIGPIPE, &act, NULL) < 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -153,10 +154,15 @@ void sigusrhandler(int sig)
 
 void sighuphandler(int sig)
 {
-	printf("catch a SIGHUP signal, ignore\n");
+	//printf("catch a SIGHUP signal, ignore\n");
 }
 
 void sigquithandler(int sig)
 {
 
+}
+
+void sigpipehandler(int sig)
+{
+	//printf("catch a SIGPIPE signal, ignore\n");
 }

@@ -7,8 +7,8 @@
 CDeviceContainer *g_pdevice_container = NULL;
 CVnodeContainer *g_pvnode_container = NULL;
 int g_namespace_power = 0;
-bool g_master_flag = false;
-int g_timeout = 0;
+bool g_bmaster_flag = false;
+int g_ntimeout = 0;
 CRWLock *g_pdevice_chg_rwlock = NULL;
 
 #ifdef __cplusplus

@@ -18,6 +18,7 @@ CMsgLooper::~CMsgLooper()
 
 int CMsgLooper::run()
 {
+	int ret;
 	pkg_message *pkg_msg_ptr;
 	if(m_pmsg_parser == NULL)
 	{
@@ -46,11 +47,11 @@ int CMsgLooper::run()
 			continue;
 		}
 
-		if(m_pmsg_parser->parse_msg(pkg_msg_ptr) != 0)
+		if((ret = m_pmsg_parser->parse_msg(pkg_msg_ptr)) != 0)
 		{
 			KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
-				"msg parser parse msg failed", \
-				__LINE__);
+				"msg parser parse msg failed, errcode: %d", \
+				__LINE__, ret);
 			continue;
 		}
 	}

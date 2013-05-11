@@ -93,8 +93,15 @@ void CSock::setnonblocking()
 {
 	int opt;
 
-	opt = fcntl(m_fd, F_GETFL);
-	if(opt != -1)
+	opt = fcntl(m_fd, F_GETFL, 0);
+	if(opt < 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"fcntl F_GETFL failed, err: %s", \
+			__LINE__, strerror(errno));
+		return;
+	}
+	if(opt >= 0)
 	{
 		opt = opt | O_NONBLOCK;
 		fcntl(m_fd, F_SETFL, opt);

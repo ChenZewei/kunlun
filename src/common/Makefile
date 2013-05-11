@@ -7,7 +7,7 @@ BASE_SERVER_TEST_OBJS = acceptor.o acceptorOB.o base_server.o cond.o connector.o
 	event.o file.o inetaddr.o log.o msg_looper.o msg_parser.o msg_queue.o mutex.o rwlock.o sock.o \
 	socknotifier.o sockobserver.o sockstream.o sockstreamOB.o stream_msg_packetizer.o thread.o thread_msg_recv.o \
 	timed_stream.o
-BASE_CLIENT_TEST_OBJS = base_client_test.o
+BASE_CLIENT_TEST_OBJS = base_client_test.o timed_stream.o sockstream.o sock.o log.o inetaddr.o file.o rwlock.o
 BIN_DIR = ~/src/kunlun/bin
 COMPILE = g++ -pthread -g -D_DEBUG
 

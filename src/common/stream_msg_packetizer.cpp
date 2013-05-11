@@ -47,7 +47,7 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 						no data to read, but the connection isn't closed, so we can't delete 
 						the sock stream obj
 	 */
-	bool bfirst_recv;
+	//bool bfirst_recv;
 	int nbytes_recv;
 	int64_t nbytes_body;
 	pkg_message *pkg_msg_ptr;
@@ -56,13 +56,13 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 	
 	if(nstatus & KL_COMMON_STREAM_IN)
 	{
-		bfirst_recv = true;
+		//bfirst_recv = true;
 		while(true)
 		{
 			//KL_SYS_INFOLOG("sock stream start to receive data");
 			memset(buf, 0, KL_COMMON_BUF_SIZE);
 			nbytes_recv = stream_recv(buf, KL_COMMON_BUF_SIZE);
-			if(nbytes_recv <= 0)
+			/*if(nbytes_recv <= 0)
 			{
 				if(nbytes_recv < 0)
 				{
@@ -78,9 +78,20 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 					delete this;
 				}
 				return;
+			}*/
+			if(nbytes_recv <= 0)
+			{
+				if(nbytes_recv == 0) //sockstream peer closed
+					errno = ENOTCONN;
+
+				if(!(errno == EAGAIN || errno == EWOULDBLOCK))
+				{
+					psock_notifier->detach(this);
+					delete this;
+				}
+				return;
 			}
 
-			bfirst_recv = false;
 			pbuf = buf;
 			while(nbytes_recv > 0)
 			{
@@ -147,7 +158,7 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 					pkg_msg_ptr->pkg_len = nbytes_body + 2;
 					pkg_msg_ptr->pkg_ptr = m_pbody;
 					(m_pmsg_queue_arr->getmsgqueuebyrobin())->push_msg(pkg_msg_ptr);
-					KL_SYS_INFOLOG("push msg to msg queue successfully");
+					//KL_SYS_INFOLOG("push msg to msg queue successfully");
 					m_pbody = NULL;
 					m_nbody_recv = 0;
 					m_nheader_recv = 0;

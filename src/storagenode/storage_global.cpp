@@ -4,9 +4,12 @@
 #include "vnode_info.h"
 #include "storage_global.h"
 
-int g_timeout = 0;
-int g_storage_bind_port = 0;
-char g_storage_bind_host[KL_COMMON_IP_ADDR_LEN] = {'\0'};
+int g_ntimeout = 0;
+int g_nstorage_bind_port = 0;
+int g_nstorage_zone_id = 0;
+int g_nstorage_weight = 0;
+int g_storage_beat_interval = KL_STORAGE_BEAT_INTERVAL;
+char g_storage_bind_ip[KL_COMMON_IP_ADDR_LEN] = {'\0'};
 CRWLock *g_pcontainer_rwlock = NULL;
 CStorageVnodeContainer *g_pstorage_vnode_container = NULL;
 

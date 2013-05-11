@@ -4,6 +4,7 @@
 #include "storage_msg_parser.h"
 #include "storage_server_conf.h"
 class CThread;
+class CMsgQueue;
 class CStorageServer : public CBaseServer
 {
 public:
@@ -18,6 +19,8 @@ private:
 	int join_and_report();
 
 	CThread **m_ppreport_threads;
+	CThread *m_psync_thread;
+	CMsgQueue *m_psync_msg_queue;
 	CStorageServerConf m_storage_server_conf;
 };
 #endif //KL_STORAGE_SERVER_H_

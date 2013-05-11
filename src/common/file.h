@@ -26,9 +26,7 @@ public:
 	virtual void close_file();
 
 	int get_file_info(struct stat *buf);
-	int get_error_code();
 protected:
 	int m_fd;
-	int m_errno;
 };
 #endif //KL_COMMON_FILE_H_

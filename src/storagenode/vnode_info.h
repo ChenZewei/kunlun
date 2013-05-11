@@ -2,6 +2,7 @@
 #define KL_STORAGE_VNODE_INFO_H_
 #include <vector>
 #include <stdint.h>
+#include "common_types.h"
 #include "common_protocol.h"
 class storage_vnode
 {
@@ -12,6 +13,17 @@ public:
 	int vnode_id;
 	byte vnode_status;
 	int64_t vnode_version;
+};
+
+class storage_sync_event
+{
+public:
+	storage_sync_event();
+	~storage_sync_event();
+
+	int vnode_id;
+	int sync_dest_port;
+	char sync_dest_ip[KL_COMMON_IP_ADDR_LEN];
 };
 
 class CStorageVnodeContainer

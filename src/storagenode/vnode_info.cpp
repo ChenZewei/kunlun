@@ -16,6 +16,17 @@ CStorageVnodeContainer::CStorageVnodeContainer()
 {
 }
 
+storage_sync_event::storage_sync_event() : \
+	vnode_id(0), sync_dest_port(0)
+{
+	memset(sync_dest_ip, 0, KL_COMMON_IP_ADDR_LEN);
+}
+
+storage_sync_event::~storage_sync_event()
+{
+
+}
+
 CStorageVnodeContainer::~CStorageVnodeContainer()
 {
 }
