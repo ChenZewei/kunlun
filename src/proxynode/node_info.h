@@ -20,8 +20,11 @@ typedef sync_event *sync_event_ptr;
 
 class device_info
 {
+	typedef std::list<sync_event> sync_list_t;
+	typedef sync_list_t::iterator sync_iter_t;
 public:
 	int erase_vnode(int vnode_index);
+	sync_event pop_syncing_vnode(int vnode_index);
 
 	//deprecated device_id
 	int device_id; //sign the device in the storage node cluster(online)(not use)
@@ -31,8 +34,8 @@ public:
 	int nbind_port;
 	time_t last_update_time;
 	std::vector<int> vnode_list; //vnode_list, used to save vnode replica
-	std::list<sync_event> sync_list;
-	std::list<sync_event> syncing_list; //the list contain the vnode is syncing
+	sync_list_t sync_list;
+	sync_list_t syncing_list; //the list contain the vnode is syncing
 };
 
 class replica_info
@@ -45,6 +48,8 @@ typedef replica_info *replica_info_ptr;
 
 class vnode_info
 {
+	typedef std::list<replica_info_ptr> replica_list_t;
+	typedef replica_list_t::iterator replica_iter_t;
 public:
 	~vnode_info();
 	/*
@@ -93,7 +98,7 @@ public:
 	int wr_req_robin;
 	int rd_req_robin;
 	//replica_list's size changing only occurred when device join or exit
-	std::vector<replica_info_ptr> replica_list; 
+	replica_list_t replica_list; 
 };
 typedef vnode_info *vnode_info_ptr;
 #endif //KL_PROXY_NODE_INFO_H_

@@ -21,25 +21,42 @@ int device_info::erase_vnode(int vnode_index)
 	return 0;
 }
 
+sync_event device_info::pop_syncing_vnode(int vnode_index)
+{
+	sync_event se;
+	sync_iter_t sync_iter;
+
+	se.src_vnode_index = 0;
+	se.pdest_node = NULL;
+	for(sync_iter = syncing_list.begin(); sync_iter != syncing_list.end(); \
+		sync_iter++)
+	{
+		if((*sync_iter).src_vnode_index == vnode_index)
+		{
+			se = *sync_iter;
+			syncing_list.erase(sync_iter);
+			break;
+		}
+	}
+	return se;
+}
+
 vnode_info::~vnode_info()
 {
-	int i;
-	for(i = 0; i < replica_list.size(); i++)
+	while(!replica_list.empty())
 	{
-		if(replica_list[i] != NULL)
-		{
-			delete replica_list[i];
-			replica_list[i] = NULL;
-		}
+		delete replica_list.front();
+		replica_list.pop_front();
 	}
 }
 
 int vnode_info::get_read_replica(replica_info_ptr *ppreplica)
 {
-	int i;
+	int i, j;
+	replica_iter_t replica_iter;
 	replica_info_ptr preplica_info;
 
-	if(replica_list.size() == 0)
+	if(replica_list.empty())
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"get vnode read replica failed, err: the vnode has no replica", \
@@ -54,7 +71,12 @@ int vnode_info::get_read_replica(replica_info_ptr *ppreplica)
 			rd_req_robin = 0;
 		}
 
-		preplica_info = replica_list.at(rd_req_robin);
+		replica_iter = replica_list.begin();
+		for(j = 0; j < rd_req_robin; j++)
+		{
+			replica_iter++;
+		}
+		preplica_info = *replica_iter;
 		rd_req_robin++;
 		if(preplica_info->replica_status == KL_REPLICA_STATUS_ACTIVE)
 		{
@@ -63,15 +85,16 @@ int vnode_info::get_read_replica(replica_info_ptr *ppreplica)
 		}
 	}
 	KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
-		"get vnode read replica failed, err: the vnode has no active replica", \
-		__LINE__);
+		"get vnode read replica failed, err: the vnode(vnode_id: %d) has no active replica", \
+		__LINE__, vnode_id);
 	*ppreplica = NULL;
 	return -1;
 }
 
 int vnode_info::get_write_replica(replica_info_ptr *ppreplica)
 {
-	int i;
+	int i, j;
+	replica_iter_t replica_iter;
 	replica_info_ptr preplica_info;
 
 	if(replica_list.size() == 0)
@@ -90,7 +113,12 @@ int vnode_info::get_write_replica(replica_info_ptr *ppreplica)
 			wr_req_robin = 0;
 		}
 
-		preplica_info = replica_list.at(wr_req_robin);
+		replica_iter = replica_list.begin();
+		for(j = 0; j < rd_req_robin; j++)
+		{
+			replica_iter++;
+		}
+		preplica_info = *replica_iter;
 		wr_req_robin++;
 		if(preplica_info->replica_status == KL_REPLICA_STATUS_ACTIVE)
 		{
@@ -107,52 +135,53 @@ int vnode_info::get_write_replica(replica_info_ptr *ppreplica)
 
 replica_info_ptr vnode_info::get_replica_info(device_info_ptr preplica)
 {
-	int i;
+	replica_iter_t replica_iter;
 
 #ifdef _DEBUG
 	assert(preplica);
 #endif //_DEBUG
 
-	for(i = 0; i < replica_list.size(); i++)
+	for(replica_iter = replica_list.begin(); replica_iter != replica_list.end(); \
+		replica_iter++)
 	{
-		if(preplica == replica_list[i]->preplica)
+		if(preplica == (*replica_iter)->preplica)
 			break;
 	}
 
-	if(i < replica_list.size())
-		return replica_list[i];
+	if(replica_iter != replica_list.end())
+		return *replica_iter;
 	return NULL;
 }
 
 bool vnode_info::is_diff_zones(device_info_ptr pjoin_device)
 {
-	int replica_curr;
+	replica_iter_t replica_iter;
 
-	for(replica_curr = 0; replica_curr < replica_list.size(); \
-		replica_curr++)
+	for(replica_iter = replica_list.begin(); replica_iter != replica_list.end(); \
+		replica_iter++)
 	{
-		if(pjoin_device->zone_id == \
-			replica_list[replica_curr]->preplica->zone_id)
+		if(pjoin_device->zone_id == (*replica_iter)->preplica->zone_id)
 			break;
 	}
-	if(replica_curr != replica_list.size())
+	if(replica_iter != replica_list.end())
 		return false;
 	return true;
 }
 
 int vnode_info::destroy_replica_info(device_info_ptr preplica)
 {
-	int i;
+	replica_iter_t replica_iter;
 	
-	for(i = 0; i < replica_list.size(); i++)
+	for(replica_iter = replica_list.begin(); replica_iter != replica_list.end(); \
+		replica_iter++)
 	{
-		if(replica_list[i]->preplica == preplica)
+		if((*replica_iter)->preplica == preplica)
 			break;
 	}
-	if(i < replica_list.size())
+	if(replica_iter != replica_list.end())
 	{
-		delete replica_list[i];
-		replica_list.erase(replica_list.begin() + i);
+		delete *replica_iter;
+		replica_list.erase(replica_iter);
 	}
 	return 0;
 }

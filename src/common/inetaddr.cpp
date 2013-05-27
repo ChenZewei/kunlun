@@ -86,14 +86,14 @@ int CInetAddr::getipaddress(char *buf, int size)
 			__LINE__);
 		return -1;
 	}
-	KL_SYS_INFOLOG("get ip address: %s", paddress);
+	//KL_SYS_INFOLOG("get ip address: %s", paddress);
 	memcpy(buf, paddress, strlen(paddress));
 	return 0;
 }
 
 int CInetAddr::getport()
 {
-	return ntohl(m_sockaddr.sin_port);
+	return ntohs(m_sockaddr.sin_port);
 }
 
 int CInetAddr::get_host_name(char *buf, int size)

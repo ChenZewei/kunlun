@@ -61,17 +61,24 @@ void CAcceptorOB::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 					"no more memory to ceate sock stream");
 				continue;
 			}
-			res = stream_accept(psock_stream_ob);
-			if(res == -1)
+			if((res = stream_accept(psock_stream_ob)) != 0)
 			{	//failed or has no connection
 				delete psock_stream_ob;
-				if(errno == EINTR)
+				if(res == EINTR)
 					continue;
+				if(res == EAGAIN || res == EWOULDBLOCK)
+					break;
+				KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+					"acceptor observer call stream_accept failed, err: %s", \
+					__LINE__, strerror(res));
 				break;
 			}
 			if(psock_notifier->attach(psock_stream_ob, \
 				KL_COMMON_STREAM_IN | KL_COMMON_STREAM_EXTEND) != 0)
 			{
+				KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+					"acceptor observer call attach failed", \
+					__LINE__);
 				delete psock_stream_ob;
 				psock_stream_ob = NULL;
 			}

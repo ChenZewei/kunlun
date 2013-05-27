@@ -35,17 +35,30 @@ CAcceptor::CAcceptor(const char *host, int bind_port, \
 	listen(m_fd, backlog);
 
 	if(timeout > 0) //server option
-		setserveropt(timeout);
+	{
+		if((res = setserveropt(timeout)) != 0)
+		{
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+				"acceptor set server option failed, err: %s", \
+				__LINE__, strerror(res));
+			throw res;
+		}
+	}
 
-	setnonblocking();
+	if((res = setnonblocking()) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"acceptor set nonblocking failed, err: %s", \
+			__LINE__, strerror(res));
+		throw res;
+	}
 }
 
 CAcceptor::CAcceptor(CInetAddr& sockAddr, 
 	int backlog, int timeout) : CSock(AF_INET, SOCK_STREAM)
 {
 	int res;
-	if (setsockopt(m_fd, SOL_SOCKET, \
-		SO_REUSEADDR, &res, sizeof(int)) < 0)
+	if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &res, sizeof(int)) < 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"set SO_REUSEADDR failed, err: %s", \
@@ -53,8 +66,8 @@ CAcceptor::CAcceptor(CInetAddr& sockAddr,
 		throw errno;
 	}
 
-	if(bind(m_fd, sockAddr.getsockaddr(), \
-		sizeof(struct sockaddr)) == -1){
+	if(bind(m_fd, sockAddr.getsockaddr(), sizeof(struct sockaddr)) == -1)
+	{
 			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"call bind failed, err: %s", \
 				__LINE__, strerror(errno));
@@ -63,25 +76,49 @@ CAcceptor::CAcceptor(CInetAddr& sockAddr,
 	listen(m_fd, backlog);
 
 	if(timeout > 0) //server option
-		setserveropt(timeout);
+	{
+		if((res = setserveropt(timeout)) != 0)
+		{
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+				"acceptor set server option failed, err: %s", \
+				__LINE__, strerror(res));
+			throw res;
+		}
+	}
 
-	setnonblocking();
-#ifdef _DEBUG
-	KL_SYS_DEBUGLOG("CAcceptor constructor call successfully");
-#endif //_DEBUG
+	if((res = setnonblocking()) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"acceptor set nonblocking failed, err: %s", \
+			__LINE__, strerror(res));
+		throw res;
+	}
 }
 
-int CAcceptor::stream_accept(CSockStream *pSockStream)
+int CAcceptor::stream_accept(CSockStream *psock_stream)
 {
+	int ret;
 	int connfd;
-	struct sockaddr sockAddr;
-	socklen_t len = sizeof(sockAddr);
+	struct sockaddr sockaddr;
+	socklen_t len = sizeof(sockaddr);
 
-	connfd = accept(m_fd, &sockAddr, &len);
-	if(connfd == -1){
-		return -1;
+	connfd = accept(m_fd, &sockaddr, &len);
+	if(connfd < 0){
+		if(!(errno == EAGAIN || errno == EWOULDBLOCK))
+		{
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+				"acceptor accept sock stream connection failed, err: %s", \
+				__LINE__, strerror(errno));
+		}
+		return errno;
 	}
-	pSockStream->setsockstream(connfd);
+	if((ret = psock_stream->setsockstream(connfd)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"acceptor set sock stream failed, err: %s", \
+			__LINE__, strerror(ret));
+		return ret;
+	}
 	return 0;
 }
 
@@ -95,8 +132,8 @@ int CAcceptor::setserveropt(int timeout)
 
 	linger.l_onoff = 1;
 	linger.l_linger = timeout * 100;
-	if (setsockopt(m_fd, SOL_SOCKET, SO_LINGER, \
-                &linger, (socklen_t)sizeof(struct linger)) < 0)
+	if (setsockopt(m_fd, SOL_SOCKET, SO_LINGER, &linger, \
+		(socklen_t)sizeof(struct linger)) < 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call setsockopt failed, err: %s", \

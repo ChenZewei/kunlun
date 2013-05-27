@@ -19,7 +19,7 @@ public:
 	/*
 	 * @description: use a socket to initilize the sock stream obj
 	 */
-	void setsockstream(int sock);
+	int setsockstream(int sock);
 	virtual int stream_send(const void *buf, size_t len);
 	virtual int stream_recv(void *buf, size_t len);
 protected:

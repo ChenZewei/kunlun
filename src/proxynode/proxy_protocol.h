@@ -11,6 +11,9 @@
 #define KL_PROXY_CMD_MASTER_RESP	3
 #define KL_PROXY_CMD_SLAVER_RESP	4
 #define KL_PROXY_CMD_SYNC_DOWN		5 //sync complete
+#define KL_PROXY_CMD_GET_ACCOUNT	6
+#define KL_PROXY_CMD_GET_CONTAINER	7
+#define KL_PROXY_CMD_GET_FILE		8
 /*
  * @brief: storagenode(vnode replica) status
           when device request to join in kunlun system,
@@ -27,6 +30,7 @@
 		  the replica's status is KL_REPLICA_STATUS_ACTIVE, it can response the reading
 		  and writing request
  */
+#define KL_REPLICA_STATUS_INIT		0
 #define KL_REPLICA_STATUS_ONLINE	1
 #define KL_REPLICA_STATUS_WAIT_SYNC	2 //synchronized destination replica status
 #define KL_REPLICA_STATUS_COPY_SRC	3 //synchronized source replica status
@@ -55,15 +59,15 @@ extern "C"
 		//byte device_vnode_count[4];
 	}storage_info, *pstorage_info;
 
-	typedef struct _vnode_list_unit
+	typedef struct _vnode_report_info
 	{
 		byte vnode_id[4];
 		byte vnode_version[8];
 		byte vnode_status;
-	}vnode_list_unit, *pvnode_list_unit;
+	}vnode_report_info, *pvnode_report_info;
 
 	//master will response every vnode info
-	typedef struct _vnode_resp_unit
+	typedef struct _vnode_resp_info
 	{
 		byte vnode_id[4];
 		byte vnode_status;
@@ -72,7 +76,11 @@ extern "C"
 		//KL_REPLICA_STATUS_MOVE_SRC
 		byte sync_dest_ip[KL_COMMON_IP_ADDR_LEN];
 		byte sync_dest_port[4];
-	}vnode_resp_unit, *pvnode_resp_unit;
+	}vnode_resp_info, *pvnode_resp_info;
+	typedef struct _vnode_sync_down_info
+	{
+		byte vnode_id[4];
+	}vnode_sync_down_info, *pvnode_sync_down_info;
 #ifdef __cplusplus
 }
 #endif //__cplusplus

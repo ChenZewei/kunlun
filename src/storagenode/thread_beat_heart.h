@@ -9,7 +9,8 @@ class CTimedStream;
 class CThreadBeatHeart : public CThreadFunc
 {
 public:
-	CThreadBeatHeart(CInetAddr proxy_addr, CMsgQueue *psync_msg_queue);
+	CThreadBeatHeart(CInetAddr proxy_addr, CMsgQueue *psync_msg_queue, \
+		int nthread_index);
 	~CThreadBeatHeart();
 
 	int run();
@@ -21,8 +22,11 @@ private:
 	 */
 	int join_and_report(CTimedStream *pjoin_stream);
 	int report_vnode_info(CTimedStream *preport_stream);
+	int report_sync_down_info(CTimedStream *preport_stream);
 	int merge_vnode_status(int vnode_id, byte vnode_status);
+
 	bool m_bstop_flag;
+	int  m_nthread_index;
 	CInetAddr m_proxy_addr;
 	CMsgQueue *m_psync_msg_queue;
 };

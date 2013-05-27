@@ -73,6 +73,13 @@ int CBaseMsgParser::msg_test1_handle(pkg_message* pkg_msg_ptr)
 	{
 		presp_stream = NULL;
 	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CTimedStream constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		return errcode;
+	}
 	if(presp_stream == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \

@@ -10,6 +10,7 @@
 #include "inetaddr.h"
 #include "connector.h"
 #include "msg_queue.h"
+#include "directory.h"
 #include "vnode_info.h"
 #include "timed_stream.h"
 #include "common_types.h"
@@ -96,7 +97,8 @@ int CStorageServer::initilize()
 {
 	//todo: storage initilize
 	typedef CThread* CThreadPtr;
-	int nthread_curr;
+	CDirectory dir;
+	int nthread_curr, ret;
 	addr_list proxy_addr_list;
 	CThreadBeatHeart *pbeat_heart_func;
 	CThreadSyncData *psync_thread_func;
@@ -105,6 +107,7 @@ int CStorageServer::initilize()
 	g_nstorage_bind_port = m_storage_server_conf.nbind_port;
 	g_nstorage_zone_id = m_storage_server_conf.nzone_id;
 	g_nstorage_weight = m_storage_server_conf.nweight;
+	memcpy(g_device_root, m_storage_server_conf.device_path, KL_COMMON_PATH_LEN);
 
 	CInetAddr bind_addr(m_storage_server_conf.bind_host, \
 		m_storage_server_conf.nbind_port);
@@ -183,9 +186,17 @@ int CStorageServer::initilize()
 		return errcode;
 	}
 	//create sync push thread
+	proxy_addr_list = m_storage_server_conf.proxy_addr_list;
+	if(proxy_addr_list.empty())
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no proxy server address to join and report", \
+			__LINE__);
+		return -1;
+	}
 	try
 	{
-		psync_thread_func = new CThreadSyncData(m_psync_msg_queue);
+		psync_thread_func = new CThreadSyncData(m_psync_msg_queue, proxy_addr_list[0]);
 	}
 	catch(std::bad_alloc)
 	{
@@ -218,15 +229,6 @@ int CStorageServer::initilize()
 	}
 
 	//create beat-hearting thread to report
-	proxy_addr_list = m_storage_server_conf.proxy_addr_list;
-	if(proxy_addr_list.empty())
-	{
-		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
-			"no proxy server address to join and report", \
-			__LINE__);
-		return -1;
-	}
-
 	try
 	{
 		m_ppreport_threads = new CThreadPtr[proxy_addr_list.size()];
@@ -248,7 +250,7 @@ int CStorageServer::initilize()
 		try
 		{
 			pbeat_heart_func = new CThreadBeatHeart(proxy_addr_list[nthread_curr], \
-				m_psync_msg_queue);
+				m_psync_msg_queue, nthread_curr);
 		}
 		catch(std::bad_alloc)
 		{
@@ -292,6 +294,18 @@ int CStorageServer::initilize()
 				__LINE__);
 			return ENOMEM;
 		}
+	}
+	//make device root dir
+	if(dir.dir_exist(g_device_root))
+	{
+		dir.remove_dir(g_device_root);
+	}
+	if((ret = dir.make_dir(g_device_root)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"make device root dir failed, dir_path: %s, err: %s", \
+			__LINE__, g_device_root, strerror(ret));
+		return ret;
 	}
 	//do base server initilize
 	return CBaseServer::initilize();

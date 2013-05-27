@@ -12,13 +12,21 @@ CSockStream::CSockStream() : CSock(), m_bclosed(true)
 
 CSockStream::CSockStream(int sock) : m_bclosed(true)
 {
-	setsockstream(sock);
+	int errcode;
+	if((errcode = setsockstream(sock)) != 0)
+	{
+		throw errcode;
+	}
 }
 
 CSockStream::CSockStream(int sock, bool bclosed) : \
 	m_bclosed(bclosed)
 {
-	setsockstream(sock);
+	int errcode;
+	if((errcode = setsockstream(sock)) != 0)
+	{
+		throw errcode;
+	}
 }
 
 CSockStream::~CSockStream()
@@ -31,10 +39,10 @@ CSockStream::~CSockStream()
 		m_fd = -1;
 }
 
-void CSockStream::setsockstream(int sock)
+int CSockStream::setsockstream(int sock)
 {
 	m_fd = sock;
-	setnonblocking();
+	return setnonblocking();
 }
 
 int CSockStream::stream_send(const void *buf, size_t len)

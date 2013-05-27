@@ -6,11 +6,13 @@
 #include <sys/select.h>
 #include "log.h"
 #include "thread.h"
+#include "directory.h"
 #include "msg_queue.h"
 #include "acceptorOB.h"
 #include "msg_looper.h"
 #include "msg_parser.h"
 #include "base_server.h"
+#include "common_types.h"
 #include "thread_msg_recv.h"
 #ifdef _DEBUG
 #include <assert.h>
@@ -24,7 +26,26 @@ CBaseServer::CBaseServer(CBaseServerConf base_server_conf, CMsgParser *pmsg_pars
 #endif //_DEBUG
 	//initilize system log
 	LOG_LEVEL sys_log_level;
+	const char *p;
+	char log_dir[KL_COMMON_PATH_LEN];
+
 	sys_log_level = (LOG_LEVEL)(m_base_server_conf.nlog_level);
+	p = strrchr(m_base_server_conf.sys_log_path, '/');
+	if(p != NULL)
+	{
+		int ret;
+		CDirectory dir;
+		memset(log_dir, 0, KL_COMMON_PATH_LEN);
+		memcpy(log_dir, m_base_server_conf.sys_log_path, \
+			p - m_base_server_conf.sys_log_path);
+		if ((ret = dir.make_dir(log_dir)) != 0)
+		{
+			fprintf(stderr, "file: "__FILE__", line: %d, " \
+				"make log dir failed, log_dir: %s, err: %s", \
+				__LINE__, log_dir, strerror(ret));
+			throw ret;
+		}
+	}
 
 	try
 	{

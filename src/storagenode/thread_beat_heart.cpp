@@ -6,9 +6,11 @@
 #include <string.h>
 #include "log.h"
 #include "rwlock.h"
+#include "directory.h"
 #include "connector.h"
 #include "msg_queue.h"
 #include "vnode_info.h"
+#include "tb_hashcode.h"
 #include "common_types.h"
 #include "timed_stream.h"
 #include "storage_global.h"
@@ -18,9 +20,13 @@
 #include <assert.h>
 #endif //_DEBUG
 
+extern CRWLock g_sync_down_rwlock;
+extern std::queue<int> g_sync_down_queue;
+
 CThreadBeatHeart::CThreadBeatHeart(CInetAddr proxy_addr, \
-	CMsgQueue *psync_msg_queue) : m_bstop_flag(false), \
-	m_proxy_addr(proxy_addr), m_psync_msg_queue(psync_msg_queue)
+	CMsgQueue *psync_msg_queue, int nthread_index) : m_bstop_flag(false), \
+	m_proxy_addr(proxy_addr), m_psync_msg_queue(psync_msg_queue), \
+	m_nthread_index(nthread_index)
 {
 }
 
@@ -58,7 +64,7 @@ int CThreadBeatHeart::run()
 	pkg_header report_resp_header;
 	pkg_message *pstorage_sync_msg;
 	byte *preport_resp_body = NULL;
-	vnode_resp_unit *pvnode_resp_unit;
+	vnode_resp_info *pvnode_resp_unit;
 	storage_sync_event *pstorage_sync_event;
 
 	try
@@ -126,12 +132,14 @@ int CThreadBeatHeart::run()
 	nlast_beat_time = time(NULL);
 	while(m_bstop_flag != true)
 	{
-		if(time(NULL) - nlast_beat_time < g_storage_beat_interval)
+		//KL_SYS_INFOLOG("beat-hearting thread report loop");
+		if(time(NULL) - nlast_beat_time < KL_STORAGE_BEAT_INTERVAL)
 		{
 			sleep(1);
 			continue;
 		}
 
+		//KL_SYS_INFOLOG("beat-hearting thread true report loop");
 		nlast_beat_time = time(NULL);
 		if((ret = report_vnode_info(preport_stream)) != 0)
 		{
@@ -141,6 +149,7 @@ int CThreadBeatHeart::run()
 			do_err();
 			return ret;
 		}
+		//KL_SYS_INFOLOG("beat-hearting thread report success");
 		//to receive the reponse from proxy node
 		if((ret = preport_stream->stream_recv(&report_resp_header, \
 			sizeof(report_resp_header), g_ntimeout)) != 0)
@@ -176,7 +185,7 @@ int CThreadBeatHeart::run()
 				__LINE__);
 			return -1;
 		}
-		if((body_len % sizeof(vnode_resp_unit) != 0))
+		if((body_len % sizeof(vnode_resp_info) != 0))
 		{
 			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 				"report thread recv master resp body len(body_len: %d) is illegal", \
@@ -209,11 +218,11 @@ int CThreadBeatHeart::run()
 		}
 		//KL_SYS_INFOLOG("recv body ret: %d, body len: %d", ret, body_len);
 		//parse response body
-		vnode_count = body_len / sizeof(vnode_resp_unit);
+		vnode_count = body_len / sizeof(vnode_resp_info);
 		for(i = 0; i < vnode_count; i++)
 		{
-			pvnode_resp_unit = (vnode_resp_unit *)(preport_resp_body + \
-				i * sizeof(vnode_resp_unit));
+			pvnode_resp_unit = (vnode_resp_info *)(preport_resp_body + \
+				i * sizeof(vnode_resp_info));
 			vnode_id = CSERIALIZER::buff2int32(pvnode_resp_unit->vnode_id);
 			vnode_status = pvnode_resp_unit->vnode_status;
 
@@ -227,13 +236,14 @@ int CThreadBeatHeart::run()
 				do_err();
 				return ret;
 			}
+			//KL_SYS_INFOLOG("beat-hearting merge vnode status success");
 			if(vnode_status != KL_REPLICA_STATUS_COPY_SRC && \
 				vnode_status != KL_REPLICA_STATUS_MOVE_SRC)
 				continue;
 
 			try
 			{
-				pstorage_sync_event = new storage_sync_event();
+				pstorage_sync_event = (storage_sync_event *)(new byte[sizeof(storage_sync_event)]);
 			}
 			catch(std::bad_alloc)
 			{
@@ -267,9 +277,25 @@ int CThreadBeatHeart::run()
 			pstorage_sync_msg->pkg_len = sizeof(storage_sync_event);
 			pstorage_sync_msg->pkg_ptr = (byte*)pstorage_sync_event;
 			m_psync_msg_queue->push_msg(pstorage_sync_msg);
+			//KL_SYS_INFOLOG("push sync event(vnode_id: %d) success", vnode_id);
 		}
 		delete [] preport_resp_body;
 		preport_resp_body = NULL;
+
+		g_sync_down_rwlock.wrlock();
+		if(m_nthread_index == 0 && !g_sync_down_queue.empty())
+		{
+			ret = report_sync_down_info(preport_stream);
+		}
+		g_sync_down_rwlock.unlock();
+		if(ret != 0)
+		{
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+				"report storage node sync down info failed, err: %s", \
+				__LINE__, strerror(ret));
+			do_err();
+			return ret;
+		}
 	}
 	do_err();
 	return 0;
@@ -357,7 +383,7 @@ int CThreadBeatHeart::report_vnode_info(CTimedStream *preport_stream)
 	int64_t body_len;
 	pkg_header report_header;
 	storage_info storagenode_info;
-	vnode_list_unit vnode_unit;
+	vnode_report_info vnode_unit;
 	byte *preport_body;
 	storage_vnode *pstorage_vnode;
 
@@ -368,8 +394,9 @@ int CThreadBeatHeart::report_vnode_info(CTimedStream *preport_stream)
 			__LINE__, strerror(errno));
 		return ret;
 	}
+	//KL_SYS_INFOLOG("report vnode info function rdlock container rwlock");
 	vnode_count = g_pstorage_vnode_container->get_vnode_count();
-	body_len = (int64_t)(vnode_count * sizeof(vnode_list_unit) + sizeof(storage_info));
+	body_len = (int64_t)(vnode_count * sizeof(vnode_report_info) + sizeof(storage_info));
 	//serialize report header
 	CSERIALIZER::long2buff(body_len, report_header.pkg_len);
 	report_header.cmd = KL_PROXY_CMD_BEAT_HEART;
@@ -401,9 +428,9 @@ int CThreadBeatHeart::report_vnode_info(CTimedStream *preport_stream)
 		CSERIALIZER::int2buff(pstorage_vnode->vnode_id, vnode_unit.vnode_id);
 		CSERIALIZER::long2buff(pstorage_vnode->vnode_version, vnode_unit.vnode_version);
 		memcpy(preport_body + vnode_curr * sizeof(vnode_unit) + sizeof(storage_info), \
-			&vnode_unit, sizeof(vnode_list_unit));
+			&vnode_unit, sizeof(vnode_report_info));
 	}
-
+	//KL_SYS_INFOLOG("report vnode info function unlock container rwlock");
 	if((ret = g_pcontainer_rwlock->unlock()) != 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -440,6 +467,7 @@ int CThreadBeatHeart::merge_vnode_status(int vnode_id, byte vnode_status)
 	int res;
 	storage_vnode *pstorage_vnode_info;
 
+	//KL_SYS_INFOLOG("vnode_id: %d, vnode_status: %d", vnode_id, vnode_status);
 	if((ret = g_pcontainer_rwlock->wrlock()) != 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -453,11 +481,10 @@ int CThreadBeatHeart::merge_vnode_status(int vnode_id, byte vnode_status)
 	{
 		//always return 0
 		g_pstorage_vnode_container->delete_vnode(vnode_id);
-		ret = 0;
 		goto do_return;
 	}
 
-	pstorage_vnode_info = g_pstorage_vnode_container->getvnode(vnode_id);
+	pstorage_vnode_info = g_pstorage_vnode_container->get_vnode(vnode_id);
 	if(pstorage_vnode_info != NULL)
 	{
 		pstorage_vnode_info->vnode_status = vnode_status;
@@ -481,9 +508,14 @@ int CThreadBeatHeart::merge_vnode_status(int vnode_id, byte vnode_status)
 	pstorage_vnode_info->vnode_id = vnode_id;
 	pstorage_vnode_info->vnode_status = vnode_status;
 	pstorage_vnode_info->vnode_version = 0;
-	g_pstorage_vnode_container->add_vnode(pstorage_vnode_info);
-	ret = 0;
-
+	if((ret = g_pstorage_vnode_container->add_vnode(pstorage_vnode_info)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"storage beat-hearting add vnode info failed, err: %s", \
+			__LINE__, strerror(ret));
+		goto do_return;
+	}
+	
 do_return:
 	if((res = g_pcontainer_rwlock->unlock()) != 0)
 	{
@@ -493,4 +525,74 @@ do_return:
 		ret = (ret == 0 ? res : ret);
 	}
 	return ret;
+}
+
+int CThreadBeatHeart::report_sync_down_info(CTimedStream *preport_stream)
+{
+	int64_t pkg_len;
+	int ret, vnode_id;
+	byte *preport_body;
+	pkg_header report_header;
+	pvnode_sync_down_info vnode_sync_down_ptr;
+
+	pkg_len = sizeof(vnode_sync_down_info) * g_sync_down_queue.size() + \
+		sizeof(storage_info);
+	preport_body = new byte[pkg_len];
+	memcpy(((pstorage_info)preport_body)->device_bind_ip, \
+		g_storage_bind_ip, KL_COMMON_IP_ADDR_LEN);
+	CSERIALIZER::int2buff(g_nstorage_bind_port, \
+		((pstorage_info)preport_body)->device_bind_port);
+	vnode_sync_down_ptr = (pvnode_sync_down_info)(preport_body + \
+		sizeof(storage_info));
+	while(!g_sync_down_queue.empty())
+	{
+		vnode_id = g_sync_down_queue.front();
+		//KL_SYS_INFOLOG("src storage sync vnode(vnode_id: %d) down", vnode_id);
+		g_sync_down_queue.pop();
+		CSERIALIZER::int2buff(vnode_id, vnode_sync_down_ptr->vnode_id);
+		vnode_sync_down_ptr++;
+	}
+
+	report_header.cmd = KL_PROXY_CMD_SYNC_DOWN;
+	report_header.status = 0;
+	CSERIALIZER::long2buff(pkg_len, report_header.pkg_len);
+	if((ret = preport_stream->stream_send(&report_header, sizeof(pkg_header), \
+		g_ntimeout)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"src storage send sync down report msg header failed, err: %s", \
+			__LINE__, strerror(ret));
+		delete [] preport_body;
+		delete preport_stream;
+		return ret;
+	}
+	if((ret = preport_stream->stream_send(preport_body, pkg_len, g_ntimeout)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"src storage send sync down report msg body failed, err: %s", \
+			__LINE__, strerror(ret));
+		delete [] preport_body;
+		delete preport_stream;
+		return ret;
+	}
+	delete [] preport_body;
+	preport_body = NULL;
+
+	if((ret = preport_stream->stream_recv(&report_header, sizeof(pkg_header), \
+		g_ntimeout)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"src storage recv sync down response msg failed, err: %s", \
+			__LINE__, strerror(ret));
+		delete preport_stream;
+		return ret;
+	}
+	if(report_header.status != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"master response src storage server with err status", \
+			__LINE__);
+		delete preport_stream;
+		return ret = EINVAL;
+	}
 }

@@ -1,6 +1,6 @@
 #ifndef KL_STORAGE_VNODE_INFO_H_
 #define KL_STORAGE_VNODE_INFO_H_
-#include <vector>
+#include <list>
 #include <stdint.h>
 #include "common_types.h"
 #include "common_protocol.h"
@@ -28,6 +28,8 @@ public:
 
 class CStorageVnodeContainer
 {
+	typedef std::list<storage_vnode*> vnode_list_t;
+	typedef vnode_list_t::iterator vnode_list_iter_t;
 public:
 	CStorageVnodeContainer();
 	~CStorageVnodeContainer();
@@ -38,7 +40,7 @@ public:
 	 * @return: return the vnode info
 	 */
 	storage_vnode* at(int index);
-	storage_vnode* getvnode(int vnode_id);
+	storage_vnode* get_vnode(int vnode_id);
 	/*
 	 * @brief: add a vnode info to vnode container
 	 * @param: pvnode_info, must create on heap
@@ -49,6 +51,6 @@ public:
 	int get_vnode_count();
 
 private:
-	std::vector<storage_vnode*> m_vnode_list;
+	vnode_list_t m_vnode_list;
 };
 #endif //KL_STORAGE_VNODE_INFO_H_

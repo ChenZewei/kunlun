@@ -134,9 +134,8 @@ void CStreamMsgPacketizer::work(CSockNotifier *psock_notifier, uint32_t nstatus)
 					//push msg pkg to message queue
 #ifdef _DEBUG
 					KL_SYS_DEBUGLOG("file: "__FILE__", line: %d, " \
-						"push msg(cmd = %d, src fd: %d) to msg queue(id = %d), left bytes: %d", \
-						__LINE__, m_pkg_header.cmd, this->getsocket(), m_pmsg_queue_arr->m_queue_robin, \
-						nbytes_recv);
+						"push msg(cmd = %d, src fd: %d) to msg queue(id = %d)", \
+						__LINE__, m_pkg_header.cmd, this->getsocket(), m_pmsg_queue_arr->m_queue_robin);
 #endif //_DEBUG
 					try
 					{

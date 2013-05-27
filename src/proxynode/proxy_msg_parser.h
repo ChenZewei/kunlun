@@ -10,20 +10,20 @@ public:
 	CProxyMsgParser();
 	~CProxyMsgParser();
 
-	virtual int parse_msg(pkg_message* pkg_msg_ptr);
-
-	int msg_device_join_handle(pkg_message* pkg_msg_ptr);
-	int msg_device_report_handle(pkg_message* pkg_msg_ptr);
+	virtual int parse_msg(pkg_message *pkg_msg_ptr);
 private:
+	int msg_device_join_handle(pkg_message *pkg_msg_ptr);
+	int msg_device_report_handle(pkg_message *pkg_msg_ptr);
+	int msg_sync_down_handle(pkg_message *pkg_msg_ptr);
 	/*
 	 * @brief: master do device beat-hearting info merged
 	 */
-	int master_do_device_merge(device_info_ptr pdevice_info, pvnode_list_unit pvnode_list, \
+	int master_do_device_merge(device_info_ptr pdevice_info, pvnode_report_info pvnode_list, \
 		int vnode_count, CTimedStream *presp_stream);
 	/*
 	 * @brief: slaver do device beat-hearting info merged
 	 */
-	int slaver_do_device_merge(device_info_ptr pdevice_info, pvnode_list_unit pvnode_list, \
+	int slaver_do_device_merge(device_info_ptr pdevice_info, pvnode_report_info pvnode_list, \
 		int vnode_count);
 };
 #endif //KL_PROXY_MSG_PARSER_H_

@@ -12,9 +12,9 @@ public:
 	//server timeout option
 	int ntimeout;
 	//server bind ip address or host name
-	const char *bind_host;
+	char bind_host[256];
 	//system log path
-	const char *sys_log_path;
+	char sys_log_path[256];
 	//log level number
 	int nlog_level;
 	//thread stack size

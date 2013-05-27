@@ -8,7 +8,8 @@ public:
 	int getsocket() const;
 	int getlocaladdr(CInetAddr *pAddr);
 	int getpeeraddr(CInetAddr *pAddr);
-	void setnonblocking();
+	int setnonblocking();
+	int setblocking();
 	virtual ~CSock();
 protected:
 	CSock();

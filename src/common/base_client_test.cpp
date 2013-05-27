@@ -149,7 +149,7 @@ void* client_process(void *args)
 		printf("client(thread: %ld) recv data from server: %s\n", gettid(), inbuf);
 		pthread_mutex_unlock(&io_lock);
 	}
-	//close(sock_fd);
+	close(sock_fd);
 	delete pta;
 	return NULL;
 }

@@ -71,13 +71,23 @@ CConnector::~CConnector()
 
 int CConnector::stream_connect(CSockStream *psockstream)
 {
+	int ret;
 	if(m_fd == -1)
 		return -1;
 	if(connect(m_fd, m_serveraddr.getsockaddr(), sizeof(struct sockaddr)) == -1)
 	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"connector connect to server failed, err: %s", \
+			__LINE__, strerror(errno));
 		return -1;
 	}
-	psockstream->setsockstream(m_fd);
+	if((ret = psockstream->setsockstream(m_fd)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"connector set sock stream failed, err: %s", \
+			__LINE__, strerror(ret));
+		return -1;
+	}
 	//connect successfully, connector dispatch sock fd to sock stream
 	m_isconnected = true;
 	return 0;

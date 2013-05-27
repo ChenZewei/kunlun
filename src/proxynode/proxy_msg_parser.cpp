@@ -48,6 +48,8 @@ int CProxyMsgParser::parse_msg(pkg_message* pkg_msg_ptr)
 		return msg_device_join_handle(pkg_msg_ptr);
 	case KL_PROXY_CMD_BEAT_HEART:
 		return msg_device_report_handle(pkg_msg_ptr);
+	case KL_PROXY_CMD_SYNC_DOWN:
+		return msg_sync_down_handle(pkg_msg_ptr);
 	default:
 		KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
 			"proxy msg parser catch undefined msg...", \
@@ -57,16 +59,135 @@ int CProxyMsgParser::parse_msg(pkg_message* pkg_msg_ptr)
 	return 0;
 }
 
+int CProxyMsgParser::msg_sync_down_handle(pkg_message *pkg_msg_ptr)
+{
+	int ret, res;
+	int vnode_id, i;
+	int vnode_count;
+	char *pdevice_ip;
+	int ndevice_port;
+	pkg_header resp_header;
+	CTimedStream *presp_stream;
+	vnode_info_ptr pvnode_info;
+	device_info_ptr pdevice_info;
+	replica_info_ptr psrc_replica;
+	pstorage_info storage_info_ptr;
+	replica_info_ptr pdest_replica;
+	pvnode_sync_down_info vnode_down_ptr;
+
+	if((pkg_msg_ptr->pkg_len - sizeof(storage_info) - \
+		2) % sizeof(vnode_sync_down_info) != 0)
+	{
+		KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+			"the msg pkg of sync down handle is illegal", \
+			__LINE__);
+		delete pkg_msg_ptr;
+		return ret = EINVAL;
+	}
+
+	vnode_count = (pkg_msg_ptr->pkg_len - sizeof(storage_info) - \
+		2) / sizeof(vnode_sync_down_info);
+	try
+	{
+		presp_stream = new CTimedStream(pkg_msg_ptr->sock_stream_fd, false);
+	}
+	catch(std::bad_alloc)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no more memory to create response stream", \
+			__LINE__);
+		delete pkg_msg_ptr;
+		return ENOMEM;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"create response stream failed, err: %s", \
+			__LINE__, strerror(errcode));
+		delete pkg_msg_ptr;
+		return errcode;
+	}
+
+	storage_info_ptr = (pstorage_info)(pkg_msg_ptr->pkg_ptr + 2);
+	pdevice_ip = (char *)(storage_info_ptr->device_bind_ip);
+	ndevice_port = CSERIALIZER::buff2int32(storage_info_ptr->device_bind_port);
+	if(strcmp(pdevice_ip, "0.0.0.0") == 0)
+	{
+		CInetAddr peer_addr;
+		presp_stream->getpeeraddr(&peer_addr);
+		peer_addr.getipaddress(pdevice_ip, KL_COMMON_IP_ADDR_LEN);
+	}
+	ret = g_pdevice_chg_rwlock->rdlock();
+#ifdef _DEBUG
+	assert(ret == 0);
+#endif //_DEBUG
+	pdevice_info = g_pdevice_container->get_node_by_addr(pdevice_ip, ndevice_port);
+	ret = g_pdevice_chg_rwlock->unlock();
+#ifdef _DEBUG
+	assert(ret == 0);
+#endif //_DEBUG
+	if(pdevice_info == NULL)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"storage node isn't login, device_ip: %s, device_port: %d", \
+			__LINE__, pdevice_ip, ndevice_port);
+		ret = EACCES;
+		goto do_resp;
+	}
+	vnode_down_ptr = (pvnode_sync_down_info)(pkg_msg_ptr->pkg_ptr + sizeof(storage_info) + 2);
+	for(i = 0; i < vnode_count; i++)
+	{
+		vnode_id = CSERIALIZER::buff2int32(vnode_down_ptr->vnode_id);
+		pvnode_info = g_pvnode_container->get_vnode(vnode_id);
+		g_pvnode_container->m_pvnode_rwlock->rdlock();
+		psrc_replica = pvnode_info->get_replica_info(pdevice_info);
+		pdest_replica = pvnode_info->get_replica_info( \
+			pdevice_info->pop_syncing_vnode(vnode_id).pdest_node);
+		g_pvnode_container->m_pvnode_rwlock->unlock();
+		pdest_replica->replica_status = KL_REPLICA_STATUS_ACTIVE;
+
+		//KL_SYS_INFOLOG("vnode_id: %d, src replica status: %d", vnode_id, psrc_replica->replica_status);
+
+		if(psrc_replica->replica_status == KL_REPLICA_STATUS_MOVE_SRC)
+		{
+			g_pvnode_container->m_pvnode_rwlock->wrlock();
+			pvnode_info->destroy_replica_info(psrc_replica->preplica);
+			g_pvnode_container->m_pvnode_rwlock->unlock();
+		}
+		else
+		{
+			psrc_replica->replica_status = KL_REPLICA_STATUS_ACTIVE;
+		}
+		vnode_down_ptr++;
+	}
+	ret = 0;
+
+do_resp:
+	resp_header.cmd = KL_PROXY_CMD_MASTER_RESP;
+	resp_header.status = ret;
+	CSERIALIZER::long2buff(0, resp_header.pkg_len);
+	if((res = presp_stream->stream_send(&resp_header, sizeof(pkg_header), g_ntimeout)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"resp stream send response mgs failed, err: %s", \
+			__LINE__, strerror(res));
+		ret = (ret != 0 ? ret : res);
+	}
+	delete pkg_msg_ptr;
+	delete presp_stream;
+	return ret;
+}
+
 int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 {
 	int res;
 	int ret;
-	int zone_id;
 	int weight;
+	int zone_id;
 	int device_bind_port;
 	char *pdevice_bind_ip;
-	pdevice_join_body pbody;
 	pkg_header resp_header;
+	pdevice_join_body pbody;
 	CTimedStream *presp_stream;
 	device_info_ptr pdevice_info;
 	CVnodeBalancer *pvnode_balancer;
@@ -95,7 +216,7 @@ int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 			delete pkg_msg_ptr;
 			return -1;
 		}
-		KL_SYS_INFOLOG("get peer address successfully");
+		//KL_SYS_INFOLOG("get peer address successfully");
 		peer_addr.getipaddress(pdevice_bind_ip, KL_COMMON_IP_ADDR_LEN);
 	}
 
@@ -140,7 +261,7 @@ int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 		delete pdevice_info;
 		return ENOMEM;
 	}
-	KL_SYS_INFOLOG("do vnode balance");
+	//KL_SYS_INFOLOG("do vnode balance");
 	if((res = g_pdevice_chg_rwlock->wrlock()) != 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -165,7 +286,7 @@ int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 	{
 		ret = pvnode_balancer->master_do_move_vnode(pdevice_info);
 	}
-	KL_SYS_INFOLOG("do vnode balance ret = %d", ret);
+	//KL_SYS_INFOLOG("do vnode balance ret = %d", ret);
 	
 	if(ret != 0)
 	{
@@ -202,6 +323,15 @@ int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 	{
 		presp_stream = NULL;
 	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CTimedStream constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
+		delete pkg_msg_ptr;
+		delete pvnode_balancer;
+		return errcode;
+	}
 	if(presp_stream == NULL)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -234,11 +364,11 @@ int CProxyMsgParser::msg_device_report_handle(pkg_message* pkg_msg_ptr)
 	pstorage_info storage_info_ptr;
 	device_info_ptr pdevice_info;
 	pkg_header proxy_resp_header;
-	vnode_list_unit pvnode_unit;
+	vnode_report_info pvnode_unit;
 
 	//check whether the msg is legal
 	if((pkg_msg_ptr->pkg_len - sizeof(storage_info) - 2) % \
-		sizeof(vnode_list_unit) != 0)
+		sizeof(vnode_report_info) != 0)
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"device beat-hearting msg is illegal", \
@@ -270,7 +400,7 @@ int CProxyMsgParser::msg_device_report_handle(pkg_message* pkg_msg_ptr)
 		return errcode;
 	}
 
-	vnode_count = (pkg_msg_ptr->pkg_len - sizeof(storage_info) - 2) / sizeof(vnode_list_unit);
+	vnode_count = (pkg_msg_ptr->pkg_len - sizeof(storage_info) - 2) / sizeof(vnode_report_info);
 	storage_info_ptr = (pstorage_info)(pkg_msg_ptr->pkg_ptr + 2);
 	if(strcmp((char*)(storage_info_ptr->device_bind_ip), "0.0.0.0") == 0)
 	{
@@ -337,7 +467,7 @@ int CProxyMsgParser::msg_device_report_handle(pkg_message* pkg_msg_ptr)
 	//merge device info
 	if(g_bmaster_flag == true)
 	{
-		if((ret = master_do_device_merge(pdevice_info, (pvnode_list_unit)(pkg_msg_ptr->pkg_ptr + \
+		if((ret = master_do_device_merge(pdevice_info, (pvnode_report_info)(pkg_msg_ptr->pkg_ptr + \
 			sizeof(storage_info) + 2), vnode_count, presp_stream)) != 0)
 		{
 			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -350,7 +480,7 @@ int CProxyMsgParser::msg_device_report_handle(pkg_message* pkg_msg_ptr)
 	}
 	else
 	{
-		if((ret = slaver_do_device_merge(pdevice_info, (pvnode_list_unit)(pkg_msg_ptr->pkg_ptr + \
+		if((ret = slaver_do_device_merge(pdevice_info, (pvnode_report_info)(pkg_msg_ptr->pkg_ptr + \
 			sizeof(pstorage_info) + 2), vnode_count)) != 0)
 		{
 			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
@@ -375,7 +505,7 @@ int CProxyMsgParser::msg_device_report_handle(pkg_message* pkg_msg_ptr)
 }
 
 int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
-	pvnode_list_unit pvnode_list, int vnode_count, CTimedStream *presp_stream)
+	pvnode_report_info pvnode_list, int vnode_count, CTimedStream *presp_stream)
 {
 	int ret;
 	int64_t pkg_len;
@@ -383,15 +513,15 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 	byte vnode_status;
 	int64_t vnode_version;
 	pkg_header resp_header;
-	vnode_resp_unit resp_vnode;
-	pvnode_resp_unit presp_body;
+	vnode_resp_info resp_vnode;
+	pvnode_resp_info presp_body;
 	vnode_info_ptr pproxy_vnode;
 	sync_event vnode_sync_event;
 	replica_info_ptr psync_replica;
 	replica_info_ptr pproxy_replica;
-	pvnode_list_unit pstorage_vnode;
+	pvnode_report_info pstorage_vnode;
 	std::vector<int> device_vnode_list;
-	std::vector<vnode_resp_unit> vnode_resp_list;
+	std::vector<vnode_resp_info> vnode_resp_list;
 
 	//KL_SYS_INFOLOG("proxy node call master_do_device_merge");
 	if((ret = g_pdevice_chg_rwlock->wrlock()) != 0)
@@ -402,6 +532,7 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 		return ret;
 	}
 	device_vnode_list = pdevice_info->vnode_list;
+	//start to handle vnode sync event
 	while(!pdevice_info->sync_list.empty())
 	{
 		vnode_sync_event = pdevice_info->sync_list.front();
@@ -413,15 +544,15 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 				__LINE__, strerror(ret));
 			return ret;
 		}
-		for(i = 0; i < device_vnode_list.size(); i++)
-		{
-			if(vnode_sync_event.src_vnode_index == device_vnode_list[i])
-				break;
-		}
-#ifdef _DEBUG
-		assert(i < device_vnode_list.size());
-#endif //__DEBUG
-		device_vnode_list.erase(device_vnode_list.begin() + i);
+// 		for(i = 0; i < device_vnode_list.size(); i++)
+// 		{
+// 			if(vnode_sync_event.src_vnode_index == device_vnode_list[i])
+// 				break;
+// 		}
+// #ifdef _DEBUG
+// 		assert(i < device_vnode_list.size());
+// #endif //__DEBUG
+// 		device_vnode_list.erase(device_vnode_list.begin() + i);
 		//push to syncing list
 		pdevice_info->syncing_list.push_back(vnode_sync_event);
 
@@ -457,12 +588,12 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 		return ret;
 	}
 	//KL_SYS_INFOLOG("proxy beat-hearting handle response sync event successfully");
-
+	//KL_SYS_INFOLOG("vnode_count: %d, device_vnode_list.size: %d", vnode_count, device_vnode_list.size());
 	for(i = 0; i < vnode_count; i++)
 	{
 		int j;
 
-		pstorage_vnode = (pvnode_list_unit)(pvnode_list + i);
+		pstorage_vnode = (pvnode_report_info)(pvnode_list + i);
 #ifdef _DEBUG
 		assert(pstorage_vnode != NULL);
 #endif //_DEBUG
@@ -494,7 +625,7 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 			return ret;
 		}
 		pproxy_replica = pproxy_vnode->get_replica_info(pdevice_info);
-		memset(&resp_vnode, 0, sizeof(vnode_resp_unit));
+		memset(&resp_vnode, 0, sizeof(vnode_resp_info));
 		if(pproxy_replica->replica_status == KL_REPLICA_STATUS_COPY_SRC || \
 			pproxy_replica->replica_status == KL_REPLICA_STATUS_MOVE_SRC)
 		{
@@ -502,15 +633,15 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 #ifdef _DEBUG
 			assert(ret == 0);
 #endif //_DEBUG
-			for(j = 0; j < device_vnode_list.size(); j++)
-			{
-				if(nvnode_id == device_vnode_list[j])
-					break;
-			}
-			if(j < device_vnode_list.size())
-			{
-				device_vnode_list.erase(device_vnode_list.begin() + j);
-			}
+// 			for(j = 0; j < device_vnode_list.size(); j++)
+// 			{
+// 				if(nvnode_id == device_vnode_list[j])
+// 					break;
+// 			}
+// 			if(j < device_vnode_list.size())
+// 			{
+// 				device_vnode_list.erase(device_vnode_list.begin() + j);
+// 			}
 			continue;
 		}
 		else if(pproxy_replica->replica_status == KL_REPLICA_STATUS_WAIT_SYNC)
@@ -575,8 +706,14 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 			}
 			else
 			{
-				if(vnode_version > pproxy_vnode->version)
+				if(vnode_version == pproxy_vnode->version)
+				{
+					pproxy_replica->replica_status = KL_REPLICA_STATUS_ACTIVE;
+				}
+				else if(vnode_version > pproxy_vnode->version)
+				{
 					pproxy_vnode->version = vnode_version;
+				}
 				resp_vnode.vnode_status = pproxy_replica->replica_status;
 				ret = g_pvnode_container->m_pvnode_rwlock->unlock();
 #ifdef _DEBUG
@@ -587,8 +724,7 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 			}
 		}
 	}
-	//KL_SYS_INFOLOG("proxy beat-hearting handle response storage vnode info successfully");
-
+	//the storage replica don't have these vnode, so add them
 	for(i = 0; i < device_vnode_list.size(); i++)
 	{
 		nvnode_id = device_vnode_list[i];
@@ -603,12 +739,17 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 #ifdef _DEBUG
 		assert(ret == 0);
 #endif //_DEBUG
+		if(resp_vnode.vnode_status == KL_REPLICA_STATUS_COPY_SRC || \
+			resp_vnode.vnode_status == KL_REPLICA_STATUS_MOVE_SRC)
+		{
+			continue;
+		}
 		CSERIALIZER::int2buff(nvnode_id, resp_vnode.vnode_id);
 		vnode_resp_list.push_back(resp_vnode);
 	}
-	//KL_SYS_INFOLOG("proxy beat-hearting handle response deleteing vnode successfully");
 
-	pkg_len = vnode_resp_list.size() * sizeof(vnode_resp_unit);
+	//KL_SYS_INFOLOG("vnode_resp_list.size: %d", vnode_resp_list.size());
+	pkg_len = vnode_resp_list.size() * sizeof(vnode_resp_info);
 	resp_header.cmd = KL_PROXY_CMD_MASTER_RESP;
 	resp_header.status = 0;
 	CSERIALIZER::long2buff(pkg_len, resp_header.pkg_len);
@@ -623,7 +764,7 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 		return 0;
 	try
 	{
-		presp_body = new vnode_resp_unit[vnode_resp_list.size()];
+		presp_body = new vnode_resp_info[vnode_resp_list.size()];
 	}
 	catch(std::bad_alloc)
 	{
@@ -635,7 +776,7 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 	}
 	for(i = 0; i < vnode_resp_list.size(); i++)
 	{
-		memcpy(presp_body + i, &vnode_resp_list[i], sizeof(vnode_resp_unit));
+		memcpy(presp_body + i, &vnode_resp_list[i], sizeof(vnode_resp_info));
 	}
 	if((ret = presp_stream->stream_send(presp_body, pkg_len, g_ntimeout)) != 0)
 	{
@@ -650,7 +791,7 @@ int CProxyMsgParser::master_do_device_merge(device_info_ptr pdevice_info, \
 }
 
 int CProxyMsgParser::slaver_do_device_merge(device_info_ptr pdevice_info,  \
-	pvnode_list_unit pvnode_list, int vnode_count)
+	pvnode_report_info pvnode_list, int vnode_count)
 {
 	int i, j, ret;
 	int nvnode_id;
@@ -658,13 +799,13 @@ int CProxyMsgParser::slaver_do_device_merge(device_info_ptr pdevice_info,  \
 	int64_t vnode_version;
 	vnode_info_ptr pproxy_vnode;
 	replica_info_ptr pproxy_replica;
-	pvnode_list_unit pstorage_vnode;
+	pvnode_report_info pstorage_vnode;
 	std::vector<int> device_vnode_list;
 
 	device_vnode_list = pdevice_info->vnode_list;
 	for(i = 0; i < vnode_count; i++)
 	{
-		pstorage_vnode = (pvnode_list_unit)(pvnode_list + i);
+		pstorage_vnode = (pvnode_report_info)(pvnode_list + i);
 		nvnode_id = CSERIALIZER::buff2int32(pstorage_vnode->vnode_id);
 		vnode_version = CSERIALIZER::buff2int64(pstorage_vnode->vnode_version);
 		vnode_status = pstorage_vnode->vnode_status;

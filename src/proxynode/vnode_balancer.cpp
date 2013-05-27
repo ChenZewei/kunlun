@@ -77,7 +77,7 @@ int CVnodeBalancer::master_do_copy_vnode(device_info_ptr pdevice_info)
 		pjoin_replica->preplica = pdevice_info;
 		pjoin_replica->replica_status = KL_REPLICA_STATUS_ONLINE;
 		//the first replica
-		if(pvnode_info->replica_list.size() == 0)
+		if(pvnode_info->replica_list.empty())
 		{
 			pjoin_replica->replica_status = KL_REPLICA_STATUS_ACTIVE;
 		}

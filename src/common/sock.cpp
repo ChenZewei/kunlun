@@ -89,21 +89,53 @@ int CSock::getpeeraddr(CInetAddr *paddr)
 	return 0;
 }
 
-void CSock::setnonblocking()
+int CSock::setnonblocking()
 {
 	int opt;
 
 	opt = fcntl(m_fd, F_GETFL, 0);
 	if(opt < 0)
 	{
+		errno = errno != 0 ? errno : EINVAL;
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"fcntl F_GETFL failed, err: %s", \
 			__LINE__, strerror(errno));
-		return;
+		return errno;
 	}
-	if(opt >= 0)
+	opt = opt | O_NONBLOCK;
+	if(fcntl(m_fd, F_SETFL, opt) != 0)
 	{
-		opt = opt | O_NONBLOCK;
-		fcntl(m_fd, F_SETFL, opt);
+		errno = errno != 0 ? errno : EINVAL;
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"fcntl F_SETFL failed, err: %s", \
+			__LINE__, strerror(errno));
+		return errno;
 	}
+	return 0;
+}
+
+int CSock::setblocking()
+{
+	int opt;
+
+	opt = fcntl(m_fd, F_GETFL, 0);
+	if(opt < 0)
+	{
+		errno = errno != 0 ? errno : EINVAL;
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"fcntl F_GETFL failed, err: %s", \
+			__LINE__, strerror(errno));
+		return errno;
+	}
+	if(opt & O_NONBLOCK){
+		if(fcntl(m_fd, F_SETFL, opt & ~O_NONBLOCK) == -1)
+		{
+			errno = errno != 0 ? errno : EINVAL;
+			KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+				"fcntl F_SETFL failed, err: %s", \
+				__LINE__, strerror(errno));
+			return errno;
+		}
+	}
+	return 0;
 }

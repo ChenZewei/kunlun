@@ -75,7 +75,7 @@ int CFile::create_file(const char *path, mode_t mode)
 int CFile::get_file_info(struct stat *buf)
 {
 	if(fstat(m_fd, buf) == -1){
-		return -1;
+		return errno;
 	}
 	return 0;
 }
@@ -140,4 +140,26 @@ int CFile::unlink_file(const char *path)
 	int res;
 	res =  unlink(path);
 	return res;
+}
+
+int64_t CFile::get_file_size()
+{
+	struct stat buf;
+	if(get_file_info(&buf) != 0)
+	{
+		return -1;
+	}
+	return (int64_t)(buf.st_size);
+}
+
+bool CFile::file_exist(const char *file_name)
+{
+	if(access(file_name, F_OK) == 0)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }

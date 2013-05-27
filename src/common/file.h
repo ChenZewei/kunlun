@@ -2,6 +2,7 @@
 #define KL_COMMON_FILE_H_
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdint.h>
 /*
  * create a file object without buffer
  */
@@ -24,7 +25,8 @@ public:
 	virtual int write_file(const void *buf, size_t count);
 	virtual int read_file(void *buf, size_t count);
 	virtual void close_file();
-
+	bool file_exist(const char *file_name);
+	int64_t get_file_size();
 	int get_file_info(struct stat *buf);
 protected:
 	int m_fd;
