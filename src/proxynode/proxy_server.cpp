@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "log.h"
+#include "hash.h"
 #include "rwlock.h"
 #include "proxy_global.h"
 #include "proxy_server.h"
@@ -25,7 +26,7 @@ int CProxyServer::initilize()
 {
 	//do proxy initilize
 	g_bmaster_flag = m_proxy_server_conf.bmaster_flag;
-	g_namespace_power = m_proxy_server_conf.nnamespace_power;
+	//g_namespace_power = m_proxy_server_conf.nnamespace_power;
 	g_ntimeout = m_proxy_server_conf.ntimeout;
 	
 	try
@@ -92,7 +93,29 @@ int CProxyServer::initilize()
 	{
 		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
 			"call CDeviceContainer constructor failed, err: %s", \
-			__LINE__, errcode);
+			__LINE__, strerror(errcode));
+		return errcode;
+	}
+
+	try
+	{
+		g_pnamespace_hash = new CNameSpaceHash(m_proxy_server_conf.nnamespace_power, \
+			m_proxy_server_conf.nvnode_count);
+	}
+	catch(std::bad_alloc)
+	{
+		g_pnamespace_hash = NULL;
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no more memory to create namespace hash, err: %s", \
+			__LINE__);
+		return ENOMEM;
+	}
+	catch(int errcode)
+	{
+		g_pnamespace_hash = NULL;
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"call CNameSpaceHash constructor failed, err: %s", \
+			__LINE__, strerror(errcode));
 		return errcode;
 	}
 	return CBaseServer::initilize();

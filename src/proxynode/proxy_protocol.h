@@ -11,9 +11,12 @@
 #define KL_PROXY_CMD_MASTER_RESP	3
 #define KL_PROXY_CMD_SLAVER_RESP	4
 #define KL_PROXY_CMD_SYNC_DOWN		5 //sync complete
-#define KL_PROXY_CMD_GET_ACCOUNT	6
-#define KL_PROXY_CMD_GET_CONTAINER	7
-#define KL_PROXY_CMD_GET_FILE		8
+#define KL_PROXY_CMD_READ_ACCOUNT	6
+#define KL_PROXY_CMD_READ_CONTAINER	7
+#define KL_PROXY_CMD_READ_FILE		8
+#define KL_PROXY_CMD_WRITE_ACCOUNT	9
+#define KL_PROXY_CMD_WRITE_CONTAINER	10
+#define KL_PROXY_CMD_WRITE_FILE		11
 /*
  * @brief: storagenode(vnode replica) status
           when device request to join in kunlun system,
@@ -77,10 +80,16 @@ extern "C"
 		byte sync_dest_ip[KL_COMMON_IP_ADDR_LEN];
 		byte sync_dest_port[4];
 	}vnode_resp_info, *pvnode_resp_info;
+
 	typedef struct _vnode_sync_down_info
 	{
 		byte vnode_id[4];
 	}vnode_sync_down_info, *pvnode_sync_down_info;
+
+	typedef struct _file_info
+	{
+		byte file_path[KL_COMMON_PATH_LEN];
+	}file_info, *pfile_info;
 #ifdef __cplusplus
 }
 #endif //__cplusplus

@@ -1,3 +1,4 @@
+#include <new>
 #include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -66,12 +67,6 @@
 }
 
 const byte MD5::PADDING[64] = {0x80};
-const char MD5::HEX[16] = {
-	'0', '1', '2', '3',
-	'4', '5', '6', '7',
-	'8', '9', 'a', 'b',
-	'c', 'd', 'e', 'f'
-};
 
 
 /* Default construct. */
@@ -163,17 +158,17 @@ int MD5::update(CFile *pfile)
 int MD5::update(const byte* input, size_t length) 
 {
 
-	uint32 i, index, part_len;
+	uint32_t i, index, part_len;
 
 	m_bfinished = false;
 	/* Compute number of bytes mod 64 */
-	index = (uint32)((m_count[0] >> 3) & 0x3f);
+	index = (uint32_t)((m_count[0] >> 3) & 0x3f);
 	/* update number of bits */
-	if ((m_count[0] += ((uint32)length << 3)) < ((uint32)length << 3))
+	if ((m_count[0] += ((uint32_t)length << 3)) < ((uint32_t)length << 3))
 	{
 		++m_count[1];
 	}
-	m_count[1] += ((uint32)length >> 29);
+	m_count[1] += ((uint32_t)length >> 29);
 	part_len = 64 - index;
 
 	/* transform as many times as possible. */
@@ -204,9 +199,9 @@ int MD5::final()
 {
 
 	byte bits[8];
-	uint32 old_state[4];
-	uint32 old_count[2];
-	uint32 index, part_len;
+	uint32_t old_state[4];
+	uint32_t old_count[2];
+	uint32_t index, part_len;
 
 	/* Save current state and count. */
 	memcpy(old_state, m_state, 16);
@@ -216,7 +211,7 @@ int MD5::final()
 	encode(m_count, bits, 8);
 
 	/* Pad out to 56 mod 64. */
-	index = (uint32)((m_count[0] >> 3) & 0x3F);
+	index = (uint32_t)((m_count[0] >> 3) & 0x3F);
 	part_len = (index < 56) ? (56 - index) : (120 - index);
 	update(PADDING, part_len);
 
@@ -236,7 +231,7 @@ int MD5::final()
 int MD5::transform(const byte block[64]) 
 {
 
-	uint32 a = m_state[0], b = m_state[1], c = m_state[2], d = m_state[3], x[16];
+	uint32_t a = m_state[0], b = m_state[1], c = m_state[2], d = m_state[3], x[16];
 
 	decode(block, x, 64);
 
@@ -322,7 +317,7 @@ int MD5::transform(const byte block[64])
 /* Encodes input (ulong) into output (byte). Assumes length is
 a multiple of 4.
 */
-int MD5::encode(const uint32* input, byte* output, size_t length) 
+int MD5::encode(const uint32_t* input, byte* output, size_t length) 
 {
 	size_t i, j;
 	for (i = 0, j = 0; j < length; ++i, j += 4) 
@@ -338,13 +333,13 @@ int MD5::encode(const uint32* input, byte* output, size_t length)
 /* Decodes input (byte) into output (ulong). Assumes length is
 a multiple of 4.
 */
-int MD5::decode(const byte* input, uint32* output, size_t length) 
+int MD5::decode(const byte* input, uint32_t* output, size_t length) 
 {
 	size_t i, j;
 	for (i = 0, j = 0; j < length; ++i, j += 4) 
 	{
-		output[i] = ((uint32)input[j]) | (((uint32)input[j + 1]) << 8) |
-		(((uint32)input[j + 2]) << 16) | (((uint32)input[j + 3]) << 24);
+		output[i] = ((uint32_t)input[j]) | (((uint32_t)input[j + 1]) << 8) | \
+			(((uint32_t)input[j + 2]) << 16) | (((uint32_t)input[j + 3]) << 24);
 	}
 	return 0;
 }
@@ -353,4 +348,85 @@ int MD5::decode(const byte* input, uint32* output, size_t length)
 const char* MD5::to_string(char *pout_buf, size_t size)
 {
 	return kl_bin2hex(pout_buf, size, (const char*)digest(), 16);
+}
+
+
+CNameSpaceHash::CNameSpaceHash(int nname_power, int nvnode_count) : \
+	m_nname_power(nname_power), m_nvnode_count(nvnode_count)
+{
+
+}
+
+CNameSpaceHash::~CNameSpaceHash()
+{
+
+}
+
+uint64_t CNameSpaceHash::bkdr_hash(const char *str, int size)
+{
+	uint64_t useed = 131;
+	uint64_t uhash = 0;
+	const unsigned char *p;
+	const unsigned char *pend;
+
+	pend = (const unsigned char *)str + size;
+
+	for(p = (const unsigned char *)str; p < pend; p++)
+	{
+		uhash  = uhash * useed + *(p++);
+	}
+
+	return uhash;
+}
+
+uint64_t CNameSpaceHash::str_hash(const char *str)
+{
+#ifdef _DEBUG
+	assert(str != NULL);
+#endif //_DEBUG
+	return bkdr_hash(str, strlen(str));
+}
+
+uint64_t CNameSpaceHash::mem_hash(const void *buf, int size)
+{
+#ifdef _DEBUG
+	assert(buf != NULL);
+#endif //_DEBUG
+	return bkdr_hash((const char *)buf, size);
+}
+
+int CNameSpaceHash::get_vnode_id(const char *file_path)
+{
+	int vnode_id;
+	uint64_t key_hash;
+	uint64_t key_partition;
+	char md5_hash[KL_COMMON_MD5_HASH_LEN];
+
+#ifdef _DEBUG
+	assert(file_path != NULL);
+	assert(m_nname_power > 0);
+	assert(m_nvnode_count > 0);
+#endif //_DEBUG
+
+	try
+	{
+		MD5 md5;
+
+		md5.reset();
+		md5.update(file_path, strlen(file_path));
+		if(md5.to_string(md5_hash, KL_COMMON_MD5_HASH_LEN) == NULL)
+		{
+			return -EINVAL;
+		}
+	}
+	catch(std::bad_alloc)
+	{
+		return -ENOMEM;
+	}
+	
+	//printf("1 << m_nname_power = %ld\n", ((uint64_t)1 << m_nname_power));
+	key_hash = str_hash(md5_hash) % ((uint64_t)1 << m_nname_power);
+	key_partition = ((uint64_t)1 << m_nname_power) / (uint64_t)m_nvnode_count;
+	vnode_id = (key_hash / key_partition + 1) % (uint64_t)m_nvnode_count;
+	return vnode_id;
 }

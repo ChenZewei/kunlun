@@ -16,7 +16,7 @@ PROGRAM = kunlun_proxyd proxy_conf_parser_test
 BIN_DIR = ~/src/kunlun/bin
 COMPILE = g++ -pthread -g -D_DEBUG
 
-all : $(COMMON_OBJS) $(PROXYNODE_OBJS) $(SQLITE_OBJS) $(PROGRAM)
+all : $(COMMON_OBJS) $(PROXYNODE_OBJS) $(PROGRAM)
 .o :
 	$(COMPILE) -o $@ $< $(COMMON_OBJS) $(PROXYNODE_OBJS) $(LIB_PATH) $(INC_PATH)
 
@@ -24,7 +24,7 @@ all : $(COMMON_OBJS) $(PROXYNODE_OBJS) $(SQLITE_OBJS) $(PROGRAM)
 	$(COMPILE) -o $@ $< $(COMMON_OBJS) $(PROXYNODE_OBJS) $(LIB_PATH) $(INC_PATH)
 
 .cpp.o :
-	$(COMPILE) -c -o $@ $< $(INC_PATH) $(CFLAGS)
+	$(COMPILE) -c -o $@ $< $(INC_PATH)
 
 .PHONY : install
 install : 

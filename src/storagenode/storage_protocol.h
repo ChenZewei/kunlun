@@ -17,7 +17,8 @@
 #define KL_STORAGE_CMD_REMOVE_FILE	10
 #define KL_STORAGE_CMD_DELETE_FILE	11
 #define KL_STORAGE_CMD_LIST_FILE	12
-#define KL_STORAGE_CMD_SERVER_RESP	13
+#define KL_STORAGE_CMD_CTRL_STREAM	13
+#define KL_STORAGE_CMD_SERVER_RESP	14
 /*
  * @brief: define communicate msg pkg
  */
@@ -43,5 +44,34 @@ typedef struct _sync_file_info
 	byte file_path[KL_COMMON_PATH_LEN];
 	byte file_length[8];
 }sync_file_info, *psync_file_info;
+
+typedef struct _upload_file_info
+{
+	byte vnode_id[4];
+	byte file_path[KL_COMMON_PATH_LEN];
+	byte file_length[8];
+}upload_file_info, *pupload_file_info;
+
+/*typedef struct _storage_info
+{
+	byte storage_ip[KL_COMMON_IP_ADDR_LEN];
+	byte storage_port[4];
+}storage_info, *pstorage_info;*/
+
+typedef struct _ctrl_stream_resp
+{
+	byte stream_len[4];
+}ctrl_stream_resp, *pctrl_stream_resp;
+
+typedef struct _download_file_info
+{
+	byte vnode_id[4];
+	byte file_path[KL_COMMON_PATH_LEN];
+}download_file_info, *pdownload_file_info;
+
+typedef struct _download_file_resp
+{
+	byte file_length[8];
+}download_file_resp, *pdownload_file_resp;
 
 #endif //KL_STORAGE_PROTOCOL_H_

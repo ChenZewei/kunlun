@@ -171,13 +171,13 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	base_server_conf.bind_host = NULL;
+	strcpy(base_server_conf.bind_host, "0.0.0.0");
 	base_server_conf.nbind_port = nbind_port;
 	base_server_conf.nlog_level = 4; //DEBUG level
 	base_server_conf.nthread_stack_size = 1 * 1024 * 1024;
 	base_server_conf.ntimeout = 5;
 	base_server_conf.nwork_thread_count = 10;
-	base_server_conf.sys_log_path = "./kunlun_sys.log";
+	strcpy(base_server_conf.sys_log_path,  "./kunlun_sys.log");
 	
 	try
 	{

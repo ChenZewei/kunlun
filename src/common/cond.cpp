@@ -11,6 +11,7 @@ CCond::CCond()
 	int res;
 	pthread_condattr_t cond_attr;
 	pthread_condattr_init(&cond_attr);
+
 	if((res = pthread_cond_init(&m_cond, \
 		&cond_attr)) != 0)
 	{

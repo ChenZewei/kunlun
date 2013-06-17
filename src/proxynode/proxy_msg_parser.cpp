@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "log.h"
+#include "hash.h"
 #include "rwlock.h"
 #include "inetaddr.h"
 #include "timed_stream.h"
@@ -50,6 +51,18 @@ int CProxyMsgParser::parse_msg(pkg_message* pkg_msg_ptr)
 		return msg_device_report_handle(pkg_msg_ptr);
 	case KL_PROXY_CMD_SYNC_DOWN:
 		return msg_sync_down_handle(pkg_msg_ptr);
+	case KL_PROXY_CMD_READ_ACCOUNT:
+		return msg_read_account_handle(pkg_msg_ptr);
+	case KL_PROXY_CMD_READ_CONTAINER:
+		return msg_read_container_handle(pkg_msg_ptr);
+	case KL_PROXY_CMD_READ_FILE:
+		return msg_read_file_handle(pkg_msg_ptr);
+	case KL_PROXY_CMD_WRITE_ACCOUNT:
+		return msg_write_account_handle(pkg_msg_ptr);
+	case KL_PROXY_CMD_WRITE_CONTAINER:
+		return msg_write_container_handle(pkg_msg_ptr);
+	case KL_PROXY_CMD_WRITE_FILE:
+		return msg_write_file_handle(pkg_msg_ptr);
 	default:
 		KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
 			"proxy msg parser catch undefined msg...", \
@@ -178,6 +191,203 @@ do_resp:
 	return ret;
 }
 
+int CProxyMsgParser::msg_get_vnode_addr_handle(pkg_message *pkg_msg_ptr, bool bread_flag)
+{
+	int ret, res;
+	int nvnode_id;
+	byte *presp_body;
+	int64_t nresp_pkg_len;
+	pkg_header resp_header;
+	pfile_info file_info_ptr;
+	CTimedStream *presp_stream;
+	device_info_ptr pdevice_info;
+	pstorage_info storage_info_ptr;
+	replica_info_ptr preplica_info;
+
+	if(sizeof(file_info) != pkg_msg_ptr->pkg_len - 2)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"the msg(msg_cmd = %d) of get vnode addr is illegal", \
+			__LINE__, *(pkg_msg_ptr->pkg_ptr));
+		delete pkg_msg_ptr;
+		return EINVAL;
+	}
+
+	try
+	{
+		presp_stream = new CTimedStream(pkg_msg_ptr->sock_stream_fd, false);
+	}
+	catch(std::bad_alloc)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no more memory to create resp stream", \
+			__LINE__);
+		delete pkg_msg_ptr;
+		return ENOMEM;
+	}
+	catch(int errcode)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"create response stream failed, err: %s", \
+			__LINE__, strerror(errcode));
+		delete pkg_msg_ptr;
+		return errcode;
+	}
+
+	file_info_ptr = (pfile_info)(pkg_msg_ptr->pkg_ptr + 2);
+	nvnode_id = g_pnamespace_hash->get_vnode_id((char *)(file_info_ptr->file_path));
+	if(nvnode_id < 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"get vnode id by hash file path(file_path: %s) failed, err: %s", \
+			__LINE__, (char *)(file_info_ptr->file_path), strerror(-nvnode_id));
+		delete pkg_msg_ptr;
+		delete presp_stream;
+		return -nvnode_id;
+	}
+
+	try
+	{
+		presp_body = new byte[4 + sizeof(storage_info) * g_pvnode_container->get_replica_count()];
+	}
+	catch(std::bad_alloc)
+	{
+		presp_body = NULL;
+		delete pkg_msg_ptr;
+		delete presp_stream;
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"no more memory to create response body", \
+			__LINE__);
+		return ENOMEM;
+	}
+	
+	if((ret = g_pvnode_container->m_pvnode_rwlock->wrlock()) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"wrlock vnode rwlock failed, err: %s", \
+			__LINE__, strerror(ret));
+		delete pkg_msg_ptr;
+		delete presp_stream;
+		delete presp_body;
+		return ret;
+	}
+	if(bread_flag)
+	{
+		//client request to get read storage node addr
+		if(g_pvnode_container->get_vnode(nvnode_id)->get_read_replica(&preplica_info) != 0)
+		{
+			KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+				"vnode(vnode_id: %d) has no active replica to service", \
+				__LINE__, nvnode_id);
+			ret = EACCES;
+			goto do_err_resp;
+		}
+		pdevice_info = preplica_info->preplica;
+		CSERIALIZER::int2buff(nvnode_id, presp_body);
+		storage_info_ptr = (pstorage_info)(presp_body + 4);
+		memcpy(storage_info_ptr->device_bind_ip, pdevice_info->bind_ip, KL_COMMON_IP_ADDR_LEN);
+		CSERIALIZER::int2buff(pdevice_info->nbind_port, storage_info_ptr->device_bind_port);
+		nresp_pkg_len = 4 + sizeof(storage_info);
+		ret = 0;
+		goto do_succ_resp;
+	}
+	else
+	{
+		int i;
+		int nreplica_count;
+		replica_info_ptr pstart_replica;
+
+		nreplica_count = 0;
+		CSERIALIZER::int2buff(nvnode_id, presp_body);
+		storage_info_ptr = (pstorage_info)(presp_body + 4);
+
+		for(i = 0; i < g_pvnode_container->get_replica_count(); i++)
+		{
+			if(g_pvnode_container->get_vnode(nvnode_id)->get_write_replica(&preplica_info) != 0)
+			{
+				KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+					"vnode(vnode_id: %d) has no active replica to service", \
+					__LINE__, nvnode_id);
+				ret = EACCES;
+				goto do_err_resp;
+			}
+			pstart_replica = (i == 0 ? preplica_info : pstart_replica);
+			if(pstart_replica == preplica_info && i != 0)
+			{
+				break;
+			}
+			nreplica_count++;
+			pdevice_info = preplica_info->preplica;
+			memcpy(storage_info_ptr->device_bind_ip, pdevice_info->bind_ip, KL_COMMON_IP_ADDR_LEN);
+			CSERIALIZER::int2buff(pdevice_info->nbind_port, storage_info_ptr->device_bind_port);
+			storage_info_ptr++;
+		}
+		if(nreplica_count < 2)
+		{
+			KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
+				"vnode(vnode_id: %d) no enough active replica to service for writing option", \
+				__LINE__, nvnode_id);
+			ret = EACCES;
+			goto do_err_resp;
+		}
+		ret = 0;
+		nresp_pkg_len = 4 + sizeof(storage_info) * nreplica_count;
+		goto do_succ_resp;
+	}
+	
+do_err_resp:
+	res = g_pvnode_container->m_pvnode_rwlock->unlock();
+	CSERIALIZER::long2buff(0, resp_header.pkg_len);
+	resp_header.cmd = g_bmaster_flag ? KL_PROXY_CMD_MASTER_RESP : \
+		KL_PROXY_CMD_SLAVER_RESP;
+	resp_header.status = ret;
+	if((res = presp_stream->stream_send(&resp_header, sizeof(pkg_header), g_ntimeout)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"resp stream send err response header failed, err: %s", \
+			__LINE__, strerror(res));
+	}
+	delete pkg_msg_ptr;
+	delete [] presp_body;
+	delete presp_stream;
+	return ret;
+do_succ_resp:
+	if((res = g_pvnode_container->m_pvnode_rwlock->unlock()) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"unlock vnode rwlock failed, err: %s", \
+			__LINE__, strerror(res));
+		delete pkg_msg_ptr;
+		delete [] presp_body;
+		delete presp_stream;
+		return res;
+	}
+	CSERIALIZER::long2buff(nresp_pkg_len, resp_header.pkg_len);
+	resp_header.cmd = g_bmaster_flag ? KL_PROXY_CMD_MASTER_RESP : \
+		KL_PROXY_CMD_SLAVER_RESP;
+	resp_header.status = 0;
+	if((res = presp_stream->stream_send(&resp_header, sizeof(pkg_header), g_ntimeout)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"resp stream send success response header failed, err: %s", \
+			__LINE__, strerror(res));
+		delete pkg_msg_ptr;
+		delete [] presp_body;
+		delete presp_stream;
+		return res;
+	}
+	if((res = presp_stream->stream_send(presp_body, nresp_pkg_len, g_ntimeout)) != 0)
+	{
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"resp stream send success response body failed, err: %s", \
+			__LINE__, strerror(res));
+	}
+	delete pkg_msg_ptr;
+	delete [] presp_body;
+	delete presp_stream;
+	return res == 0 ? 0 : res;
+}
+
 int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 {
 	int res;
@@ -196,9 +406,9 @@ int CProxyMsgParser::msg_device_join_handle(pkg_message* pkg_msg_ptr)
 	{
 		KL_SYS_WARNNINGLOG("file: "__FILE__", line: %d, " \
 			"the msg pkg(msg_cmd = %d) of device join is illegal", \
-			__LINE__, pkg_msg_ptr->pkg_ptr);
+			__LINE__, *(pkg_msg_ptr->pkg_ptr));
 		delete pkg_msg_ptr;
-		return -1;
+		return EINVAL;
 	}
 
 	pbody = (pdevice_join_body)((pkg_msg_ptr->pkg_ptr) + 2);

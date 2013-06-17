@@ -8,14 +8,17 @@
 #include <sys/types.h>
 #include "file.h"
 
-CFile::CFile() : m_fd(-1)
+CFile::CFile() : \
+	m_fd(-1)
 {
 	
 }
 
-CFile::CFile(const char *path, int flags) : m_fd(-1)
+CFile::CFile(const char *path, int flags) : \
+	m_fd(-1)
 {
-	if(open_file(path, flags) == -1){
+	if(open_file(path, flags) == -1)
+	{
 		printf("file: "__FILE__", line: %d, " \
 			"open file(path: %s) failed, err: %s\n", \
 			__LINE__, path, strerror(errno));
@@ -23,9 +26,11 @@ CFile::CFile(const char *path, int flags) : m_fd(-1)
 	}
 }
 
-CFile::CFile(const char *path, int flags, mode_t mode) : m_fd(-1)
+CFile::CFile(const char *path, int flags, mode_t mode) : \
+	m_fd(-1)
 {
-	if(open_file(path, flags, mode) == -1){
+	if(open_file(path, flags, mode) == -1)
+	{
 		printf("file: "__FILE__", line: %d, " \
 			"open file(path: %s) failed, err: %s\n", \
 			__LINE__, path, strerror(errno));
@@ -48,7 +53,8 @@ void CFile::close_file()
 int CFile::open_file(const char *path, int flags)
 {
 	m_fd = open(path, flags);
-	if(m_fd == -1){
+	if(m_fd == -1)
+	{
 		return -1;
 	}
 	return 0;
@@ -57,7 +63,8 @@ int CFile::open_file(const char *path, int flags)
 int CFile::open_file(const char *path, int flags, mode_t mode)
 {
 	m_fd = open(path, flags, mode);
-	if(m_fd == -1){
+	if(m_fd == -1)
+	{
 		return -1;
 	}
 	return 0;
@@ -66,7 +73,8 @@ int CFile::open_file(const char *path, int flags, mode_t mode)
 int CFile::create_file(const char *path, mode_t mode)
 {
 	m_fd = creat(path, mode);
-	if(m_fd == -1){
+	if(m_fd == -1)
+	{
 		return -1;
 	}
 	return 0;
@@ -74,7 +82,8 @@ int CFile::create_file(const char *path, mode_t mode)
 
 int CFile::get_file_info(struct stat *buf)
 {
-	if(fstat(m_fd, buf) == -1){
+	if(fstat(m_fd, buf) == -1)
+	{
 		return errno;
 	}
 	return 0;
@@ -87,14 +96,19 @@ int CFile::read_file(void *buf, size_t count)
 	size_t nread = 0;
 	size_t nleft = count;
 
-	while(nleft > 0){
+	while(nleft > 0)
+	{
 		nread = read(m_fd, p, nleft);
-		if(nread  == -1){
-			if(errno == EINTR){
+		if(nread  == -1)
+		{
+			if(errno == EINTR)
+			{
 				continue; // read was interrupted, and call read() again
 			}
 			return -1;
-		}else if(nread == 0){
+		}
+		else if(nread == 0)
+		{
 			break; // EOF
 		}
 		p += nread;
@@ -110,14 +124,19 @@ int CFile::write_file(const void *buf, size_t count)
 	size_t nwrite = 0;
 	size_t nleft = count;
 
-	while(nleft > 0){
+	while(nleft > 0)
+	{
 		nwrite = write(m_fd, p, nleft);
-		if(nwrite == -1){
-			if(errno == EINTR){
+		if(nwrite == -1)
+		{
+			if(errno == EINTR)
+			{
 				continue;
 			}
 			return -1;
-		}else if(nwrite == 0){
+		}
+		else if(nwrite == 0)
+		{
 			return -1;
 		}
 

@@ -25,8 +25,8 @@ int CFileReaderStream::stream_readout()
 	off_t noff_set;
 	off_t nleft_bytes;
 	ssize_t nsend_bytes;
-	
 	struct stat stat_buf;
+
 	if((ret = get_file_info(&stat_buf)) != 0)
 	{
 		return ret;

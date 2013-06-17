@@ -84,6 +84,10 @@ int main(int argc, char *argv[])
 	catch(std::bad_alloc)
 	{
 		pproxy_server = NULL;
+		printf("file: "__FILE__", line: %d, " \
+			"no more memory to create kunlun proxy server\n", \
+			__LINE__);
+		return ENOMEM;
 	}
 	catch(int errcode)
 	{
@@ -92,12 +96,14 @@ int main(int argc, char *argv[])
 			__LINE__, strerror(errcode));
 		return errcode;
 	}
-	if(pproxy_server == NULL)
+	
+	if((ret = daemon(0, 0)) != 0)
 	{
-		printf("file: "__FILE__", line: %d, " \
-			"no more memory to create kunlun proxy server\n", \
-			__LINE__);
-		return ENOMEM;
+		errno = errno == 0 ? EACCES : errno;
+		KL_SYS_ERRORLOG("file: "__FILE__", line: %d, " \
+			"create kunlun_proxyd failed, err: %s", \
+			__LINE__, strerror(errno));
+		return errno;
 	}
 
 	memset(&act, 0, sizeof(act));

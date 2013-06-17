@@ -10,8 +10,11 @@ public:
 
 	virtual int parse_msg(pkg_message* pkg_msg_ptr);
 private:
-	int msg_file_check_handle(pkg_message* pkg_msg_ptr);
-	int msg_file_sync_handle(pkg_message* pkg_msg_ptr);
+	int msg_file_check_handle(pkg_message *pkg_msg_ptr);
+	int msg_file_sync_handle(pkg_message *pkg_msg_ptr);
+	int msg_upload_file_handle(pkg_message *pkg_msg_ptr);
+	int msg_download_file_handle(pkg_message *pkg_msg_ptr);
+	int msg_ctrl_stream_handle(pkg_message *pkg_msg_ptr);
 	/*
 	 * @brief: check file hashcode 
 	 * @param: bsync_flag, if check hash code different, need to sync file,

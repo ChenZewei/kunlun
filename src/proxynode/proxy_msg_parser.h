@@ -6,6 +6,13 @@
 #include "proxy_protocol.h"
 class CProxyMsgParser : public CMsgParser
 {
+#define msg_read_account_handle(pkg_msg_ptr) msg_get_vnode_addr_handle(pkg_msg_ptr, true)
+#define msg_read_container_handle(pkg_msg_ptr) msg_get_vnode_addr_handle(pkg_msg_ptr, true)
+#define msg_read_file_handle(pkg_msg_ptr) msg_get_vnode_addr_handle(pkg_msg_ptr, true)
+#define msg_write_account_handle(pkg_msg_ptr) msg_get_vnode_addr_handle(pkg_msg_ptr, false)
+#define msg_write_container_handle(pkg_msg_ptr) msg_get_vnode_addr_handle(pkg_msg_ptr, false)
+#define msg_write_file_handle(pkg_msg_ptr) msg_get_vnode_addr_handle(pkg_msg_ptr, false)
+
 public:
 	CProxyMsgParser();
 	~CProxyMsgParser();
@@ -15,6 +22,7 @@ private:
 	int msg_device_join_handle(pkg_message *pkg_msg_ptr);
 	int msg_device_report_handle(pkg_message *pkg_msg_ptr);
 	int msg_sync_down_handle(pkg_message *pkg_msg_ptr);
+	int msg_get_vnode_addr_handle(pkg_message *pkg_msg_ptr, bool bread_flag);
 	/*
 	 * @brief: master do device beat-hearting info merged
 	 */
