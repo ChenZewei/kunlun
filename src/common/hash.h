@@ -7,7 +7,8 @@ typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 
 /* MD5 declaration. */
-class MD5 {
+class MD5 
+{
 public:
 	MD5();
 	MD5(const void* in_buf, size_t length);
